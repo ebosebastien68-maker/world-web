@@ -10,7 +10,6 @@
   <div style="margin-top:10px" id="pub-latest"></div>
 </div>
 
-<!-- popup modal (hidden) -->
 <div id="pub-modal" class="card hidden" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(680px,94%);z-index:3000;">
   <div style="display:flex;justify-content:space-between;align-items:center">
     <strong>Nouvelle publication</strong>
@@ -41,6 +40,13 @@
 </style>
 
 <script>
+// --- CORRECTION : Bloc de configuration Supabase ---
+const SUPA_URL = 'https://rrcbprbxgonzsqldhfil.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyY2JwcmJ4Z29uenNxbGRoZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MzY1NjUsImV4cCI6MjA3NDExMjU2NX0.-C7VtLJA7ZLByprNBsMKSIKnH7HubPzgpIXyKEGYwrA';
+const { createClient } = supabase;
+const supabaseClient = createClient(SUPA_URL, SUPA_KEY);
+
+
 (function init_publier(){
   const latest = document.getElementById('pub-latest');
   latest.innerHTML = '<div class="muted">Aucune publication récente affichée ici — elles apparaissent sur Home</div>';
@@ -63,7 +69,6 @@ function handlePubFile(e){
 function openWhatsApp(){
   const num = document.getElementById('pub-phone').value.trim();
   if(!num) return alert('Renseigne le numéro');
-  // wa.me requires international format without + or 00
   const url = `https://wa.me/${encodeURIComponent(num)}`;
   window.open(url, '_blank');
 }
@@ -71,25 +76,27 @@ async function submitPublication(){
   const text = document.getElementById('pub-text').value.trim();
   const urlField = document.getElementById('pub-image-url').value.trim();
   if(!text && !pubFile && !urlField) return alert('Renseigne un contenu ou média');
-  const user = (await supabase.auth.getUser()).data?.user;
+  
+  // --- CORRECTION : Utiliser supabaseClient ---
+  const user = (await supabaseClient.auth.getUser()).data?.user;
   if(!user) return alert('Connecte-toi');
 
   let imageUrl = urlField || null;
   if(pubFile){
-    // upload file to storage
     try{
       const path = `posts/${Date.now()}_${pubFile.name}`;
-      const { data:up, error:upErr } = await supabase.storage.from('public').upload(path, pubFile);
+      // --- CORRECTION : Utiliser supabaseClient ---
+      const { data:up, error:upErr } = await supabaseClient.storage.from('public').upload(path, pubFile);
       if(upErr) throw upErr;
       imageUrl = `${SUPA_URL}/storage/v1/object/public/${up.path}`;
     }catch(e){ console.error(e); alert('Erreur upload'); return; }
   }
 
   try{
-    await supabase.from('posts').insert({ admin_id: user.id, content: text, image_url: imageUrl });
+    // --- CORRECTION : Utiliser supabaseClient ---
+    await supabaseClient.from('posts').insert({ admin_id: user.id, content: text, image_url: imageUrl });
     alert('Publication créée');
     closePublishPopup();
-    // if Home is visible, you can refresh it by reloading the page or re-invoking 首页 logic
   }catch(e){ console.error(e); alert('Erreur publication'); }
 }
 </script>
