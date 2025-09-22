@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>World Web- Main</title>
 
-<!-- Supabase JS client (CDN) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <style>
@@ -23,7 +22,8 @@
   header nav{display:flex;gap:8px;align-items:center}
   header button{background:transparent;border:0;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:15px}
   header button.active{background:rgba(37,99,235,0.12);color:var(--accent)}
-  #app{padding:84px 16px 32px;max-width:980px;margin:0 auto;min-height:calc(100vh - 100px)}
+  /* Correction : Augmentation du padding pour laisser de la place à la 2ème ligne de boutons */
+  #app{padding:120px 16px 32px;max-width:980px;margin:0 auto;min-height:calc(100vh - 100px)}
   .pageContent{opacity:0;transform:translateY(10px) rotateX(4deg);animation:enter 380ms ease forwards}
   @keyframes enter{to{opacity:1;transform:none}}
 
@@ -43,7 +43,20 @@
 
   /* responsive */
   @media (max-width:640px){
-    header{padding:0 10px}
+    /* Correction : On change le header pour qu'il s'adapte aux petits écrans */
+    header{
+      padding:10px;
+      /* La hauteur s'ajuste automatiquement au contenu */
+      height:auto; 
+      /* On centre les éléments verticalement */
+      align-items: center;
+    }
+    header nav {
+      /* Permet aux boutons de passer à la ligne */
+      flex-wrap: wrap; 
+      /* Aligne les boutons à droite quand ils passent à la ligne */
+      justify-content: flex-end; 
+    }
     .search input{width:140px}
   }
 </style>
@@ -70,10 +83,11 @@
 <main id="app">Chargement...</main>
 
 <script>
-/* ---------- CONFIG SUPABASE (fourni par toi) ---------- */
+// --- CORRECTION : Utiliser le client Supabase correctement ---
 const SUPA_URL = 'https://rrcbprbxgonzsqldhfil.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyY2JwcmJ4Z29uenNxbGRoZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MzY1NjUsImV4cCI6MjA3NDExMjU2NX0.-C7VtLJA7ZLByprNBsMKSIKnH7HubPzgpIXyKEGYwrA';
-const supabase = supabaseJs.createClient(SUPA_URL, SUPA_KEY); // supabaseJs from CDN
+const { createClient } = supabase; // On récupère la fonction createClient de l'objet global supabase
+const supabaseClient = createClient(SUPA_URL, SUPA_KEY); // On crée notre client
 
 /* ---------- PAGES PRELOAD ---------- */
 const PAGE_NAMES = ['home','messages','notifications','groupes','publier'];
@@ -91,19 +105,16 @@ async function preloadPages(){
       pages[name] = `<div class="card">Erreur fetch ${e.message}</div>`;
     }
   }
-  // afficher home par défaut après préload
   affichePage('home');
 }
 preloadPages();
 
 /* ---------- helper: execute inline scripts inside container ---------- */
 function runInlineScripts(container){
-  // find script tags and run them in global scope
   const scripts = container.querySelectorAll('script');
   scripts.forEach(s => {
     try{
       const code = s.textContent;
-      // create new function to run in global scope
       const fn = new Function(code);
       fn();
     }catch(err){
@@ -123,9 +134,7 @@ function affichePage(pageName){
   const app = document.getElementById('app');
   setActiveButton(pageName);
   const raw = pages[pageName] || `<div class="card">Page non trouvée</div>`;
-  // inject wrapper so styles inside page don't collide with header
   app.innerHTML = `<div class="pageContent" id="page-${pageName}">${raw}</div>`;
-  // ensure DOM rendered then run inline scripts
   requestAnimationFrame(()=> {
     const container = document.getElementById('page-'+pageName);
     runInlineScripts(container);
@@ -134,7 +143,8 @@ function affichePage(pageName){
 
 /* ---------- small auth check (if needed) ---------- */
 async function currentUser(){
-  const { data } = await supabase.auth.getUser();
+  // --- CORRECTION : Utiliser supabaseClient ---
+  const { data } = await supabaseClient.auth.getUser();
   return data?.user || null;
 }
 </script>
