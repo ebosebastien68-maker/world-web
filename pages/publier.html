@@ -1,0 +1,95 @@
+<div class="card">
+  <strong>Publier</strong>
+  <div class="muted">Crée une publication visible par tous</div>
+</div>
+
+<div class="card">
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="btn" onclick="openPublishPopup()">Écrire une publication</button>
+  </div>
+  <div style="margin-top:10px" id="pub-latest"></div>
+</div>
+
+<!-- popup modal (hidden) -->
+<div id="pub-modal" class="card hidden" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(680px,94%);z-index:3000;">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <strong>Nouvelle publication</strong>
+    <button onclick="closePublishPopup()">✖</button>
+  </div>
+  <div style="margin-top:12px">
+    <textarea id="pub-text" placeholder="Écris ta publication..." style="width:100%;height:140px;padding:10px;border-radius:8px;border:1px solid #e5e7eb"></textarea>
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+      <input id="pub-image-url" placeholder="URL image (optionnel)" style="padding:8px;border-radius:8px;border:1px solid #e5e7eb;width:100%">
+      <input id="pub-file" type="file" accept="image/*,video/*" style="display:none" onchange="handlePubFile(event)">
+      <button class="btn ghost" onclick="document.getElementById('pub-file').click()">Importer média</button>
+
+      <input id="pub-phone" placeholder="Numéro (ex: 229XXXXXXXX)" style="padding:8px;border-radius:8px;border:1px solid #e5e7eb;width:220px">
+      <button class="btn" onclick="openWhatsApp()">WhatsApp</button>
+    </div>
+
+    <div id="pub-preview" style="margin-top:10px"></div>
+    <div style="margin-top:12px">
+      <button class="btn" onclick="submitPublication()">Publier</button>
+      <button class="btn ghost" onclick="closePublishPopup()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* small style override for modal */
+  #pub-modal{box-shadow:0 10px 40px rgba(2,6,23,0.12)}
+</style>
+
+<script>
+(function init_publier(){
+  const latest = document.getElementById('pub-latest');
+  latest.innerHTML = '<div class="muted">Aucune publication récente affichée ici — elles apparaissent sur Home</div>';
+})();
+
+let pubFile = null;
+function openPublishPopup(){
+  document.getElementById('pub-modal').classList.remove('hidden');
+}
+function closePublishPopup(){
+  document.getElementById('pub-modal').classList.add('hidden');
+}
+function handlePubFile(e){
+  const f = e.target.files[0];
+  if(!f) return;
+  pubFile = f;
+  const url = URL.createObjectURL(f);
+  document.getElementById('pub-preview').innerHTML = `<img src="${url}" class="media-thumb">`;
+}
+function openWhatsApp(){
+  const num = document.getElementById('pub-phone').value.trim();
+  if(!num) return alert('Renseigne le numéro');
+  // wa.me requires international format without + or 00
+  const url = `https://wa.me/${encodeURIComponent(num)}`;
+  window.open(url, '_blank');
+}
+async function submitPublication(){
+  const text = document.getElementById('pub-text').value.trim();
+  const urlField = document.getElementById('pub-image-url').value.trim();
+  if(!text && !pubFile && !urlField) return alert('Renseigne un contenu ou média');
+  const user = (await supabase.auth.getUser()).data?.user;
+  if(!user) return alert('Connecte-toi');
+
+  let imageUrl = urlField || null;
+  if(pubFile){
+    // upload file to storage
+    try{
+      const path = `posts/${Date.now()}_${pubFile.name}`;
+      const { data:up, error:upErr } = await supabase.storage.from('public').upload(path, pubFile);
+      if(upErr) throw upErr;
+      imageUrl = `${SUPA_URL}/storage/v1/object/public/${up.path}`;
+    }catch(e){ console.error(e); alert('Erreur upload'); return; }
+  }
+
+  try{
+    await supabase.from('posts').insert({ admin_id: user.id, content: text, image_url: imageUrl });
+    alert('Publication créée');
+    closePublishPopup();
+    // if Home is visible, you can refresh it by reloading the page or re-invoking 首页 logic
+  }catch(e){ console.error(e); alert('Erreur publication'); }
+}
+</script>
