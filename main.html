@@ -22,16 +22,13 @@
   header nav{display:flex;gap:8px;align-items:center}
   header button{background:transparent;border:0;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:15px}
   header button.active{background:rgba(37,99,235,0.12);color:var(--accent)}
-  /* Correction : Augmentation du padding pour laisser de la place à la 2ème ligne de boutons */
-  #app{padding:120px 16px 32px;max-width:980px;margin:0 auto;min-height:calc(100vh - 100px)}
+  #app{padding:84px 16px 32px;max-width:980px;margin:0 auto;min-height:calc(100vh - 100px)}
   .pageContent{opacity:0;transform:translateY(10px) rotateX(4deg);animation:enter 380ms ease forwards}
   @keyframes enter{to{opacity:1;transform:none}}
 
-  /* global card */
   .card{background:var(--card);border-radius:10px;padding:14px;margin-bottom:14px;box-shadow:0 1px 6px rgba(2,6,23,0.04)}
   .muted{color:var(--muted);font-size:13px}
 
-  /* small helpers */
   .row{display:flex;gap:8px;align-items:center}
   input,textarea,select,button{font-family:inherit}
   .btn{background:var(--accent);color:white;border:0;padding:8px 12px;border-radius:8px;cursor:pointer}
@@ -43,21 +40,22 @@
 
   /* responsive */
   @media (max-width:640px){
-    /* Correction : On change le header pour qu'il s'adapte aux petits écrans */
     header{
       padding:10px;
-      /* La hauteur s'ajuste automatiquement au contenu */
       height:auto; 
-      /* On centre les éléments verticalement */
       align-items: center;
     }
     header nav {
-      /* Permet aux boutons de passer à la ligne */
       flex-wrap: wrap; 
-      /* Aligne les boutons à droite quand ils passent à la ligne */
       justify-content: flex-end; 
     }
     .search input{width:140px}
+
+    /* --- LA SOLUTION EST ICI --- */
+    /* On augmente le padding du haut pour compenser la hauteur du header qui a grandi */
+    #app {
+      padding-top: 130px; 
+    }
   }
 </style>
 </head>
@@ -83,15 +81,13 @@
 <main id="app">Chargement...</main>
 
 <script>
-// --- CORRECTION : Utiliser le client Supabase correctement ---
+const { createClient } = supabase;
 const SUPA_URL = 'https://rrcbprbxgonzsqldhfil.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyY2JwcmJ4Z29uenNxbGRoZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MzY1NjUsImV4cCI6MjA3NDExMjU2NX0.-C7VtLJA7ZLByprNBsMKSIKnH7HubPzgpIXyKEGYwrA';
-const { createClient } = supabase; // On récupère la fonction createClient de l'objet global supabase
-const supabaseClient = createClient(SUPA_URL, SUPA_KEY); // On crée notre client
+const supabaseClient = createClient(SUPA_URL, SUPA_KEY);
 
-/* ---------- PAGES PRELOAD ---------- */
 const PAGE_NAMES = ['home','messages','notifications','groupes','publier'];
-const pages = {}; // raw HTML
+const pages = {};
 async function preloadPages(){
   for(const name of PAGE_NAMES){
     try{
@@ -109,7 +105,6 @@ async function preloadPages(){
 }
 preloadPages();
 
-/* ---------- helper: execute inline scripts inside container ---------- */
 function runInlineScripts(container){
   const scripts = container.querySelectorAll('script');
   scripts.forEach(s => {
@@ -123,7 +118,6 @@ function runInlineScripts(container){
   });
 }
 
-/* ---------- affichePage: injecte HTML et exécute scripts ---------- */
 function setActiveButton(name){
   PAGE_NAMES.forEach(n=>{
     const b = document.getElementById('btn-'+n);
@@ -141,9 +135,7 @@ function affichePage(pageName){
   });
 }
 
-/* ---------- small auth check (if needed) ---------- */
 async function currentUser(){
-  // --- CORRECTION : Utiliser supabaseClient ---
   const { data } = await supabaseClient.auth.getUser();
   return data?.user || null;
 }
