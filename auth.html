@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FiK - Auth</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  body{display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;background:#f7fafc;font-family:Inter,Arial}
+  .box{width:420px;background:#fff;padding:22px;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,0.08)}
+  h2{margin:0 0 10px}
+  label{display:block;margin-top:10px;font-size:13px;color:#374151}
+  input{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;margin-top:6px}
+  .row{display:flex;gap:8px;margin-top:12px}
+  .btn{background:#2563eb;color:#fff;padding:8px 12px;border-radius:8px;border:0;cursor:pointer}
+  a{color:#2563eb;text-decoration:none;font-size:13px}
+  .muted{font-size:13px;color:#6b7280;margin-top:8px}
+</style>
+</head>
+<body>
+
+<div class="box">
+  <h2>Connexion / Inscription</h2>
+
+  <div id="form-area">
+    <label>Email</label>
+    <input id="email" type="email" placeholder="email@example.com">
+    <label>Mot de passe</label>
+    <input id="password" type="password" placeholder="Mot de passe">
+
+    <div class="row">
+      <button class="btn" onclick="signIn()">Se connecter</button>
+      <button class="btn" style="background:#10b981" onclick="signUp()">S'inscrire</button>
+    </div>
+
+    <div style="margin-top:8px">
+      <a href="#" onclick="sendReset(event)">Mot de passe oublié ?</a>
+    </div>
+    <div id="msg" class="muted"></div>
+  </div>
+</div>
+
+<script>
+const SUPA_URL = 'https://rrcbprbxgonzsqldhfil.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyY2JwcmJ4Z29uenNxbGRoZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MzY1NjUsImV4cCI6MjA3NDExMjU2NX0.-C7VtLJA7ZLByprNBsMKSIKnH7HubPzgpIXyKEGYwrA';
+const supabase = supabaseJs.createClient(SUPA_URL, SUPA_KEY);
+
+const msg = document.getElementById('msg');
+
+async function signIn(){
+  msg.textContent = 'Connexion en cours...';
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if(error) msg.textContent = 'Erreur : ' + error.message;
+  else {
+    msg.textContent = 'Connecté ! Redirection…';
+    setTimeout(()=> location.href = 'main.html',600);
+  }
+}
+
+async function signUp(){
+  msg.textContent = 'Création de compte...';
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if(error) msg.textContent = 'Erreur : ' + error.message;
+  else {
+    msg.textContent = 'Compte créé. Vérifiez votre email pour confirmer.';
+  }
+}
+
+async function sendReset(e){
+  e.preventDefault();
+  const email = document.getElementById('email').value;
+  if(!email){ msg.textContent = 'Entrez votre email d\'abord'; return;}
+  msg.textContent = 'Envoi du lien de réinitialisation...';
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/auth.html' });
+  if(error) msg.textContent = 'Erreur : ' + error.message;
+  else msg.textContent = 'Lien envoyé. Vérifie ta boîte mail.';
+}
+</script>
+</body>
+</html>
