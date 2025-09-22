@@ -1,0 +1,106 @@
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <strong>Fil d'actualité</strong>
+    <div class="muted">Dernières publications</div>
+  </div>
+</div>
+
+<div id="feed-container"></div>
+
+<style>
+  /* styles spécifiques home (scoped inside page) */
+  #feed-container .post{margin-bottom:12px}
+  .post .meta{font-size:13px;color:var(--muted);margin-bottom:8px}
+  .post .content{font-size:15px}
+</style>
+
+<script>
+(async function init_home(){
+  const container = document.getElementById('feed-container');
+  container.innerHTML = '<div class="card muted">Chargement des posts...</div>';
+
+  // fetch posts from Supabase (table "posts" expected)
+  try {
+    const { data, error } = await supabase
+      .from('posts')
+      .select('id, admin_id, content, image_url, created_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if(error) throw error;
+    if(!data || data.length === 0){
+      container.innerHTML = '<div class="card muted">Aucune publication pour le moment.</div>';
+      return;
+    }
+
+    container.innerHTML = data.map(post => {
+      const imgHtml = post.image_url ? `<img src="${escapeHtml(post.image_url)}" class="media-thumb" alt="media">` : '';
+      return `
+        <div class="card post" data-id="${post.id}">
+          <div class="meta">publié par <strong>${escapeHtml(post.admin_id || 'admin')}</strong> • ${new Date(post.created_at).toLocaleString()}</div>
+          <div class="content">${escapeHtml(post.content || '')}</div>
+          ${imgHtml}
+          <div class="row" style="margin-top:8px">
+            <button class="btn" onclick="reactPost(${post.id}, 'like')">👍 Réagir</button>
+            <button class="btn ghost" onclick="openComments(${post.id})">💬 Commentaires</button>
+          </div>
+          <div id="comments-for-${post.id}" class="muted" style="margin-top:8px"></div>
+        </div>
+      `;
+    }).join('');
+
+    // subscribe to new posts in realtime
+    supabase.channel('public:posts').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => {
+      // prepend new post
+      const html = `
+        <div class="card post" data-id="${payload.new.id}">
+          <div class="meta">publié par <strong>${escapeHtml(payload.new.admin_id || 'admin')}</strong> • ${new Date(payload.new.created_at).toLocaleString()}</div>
+          <div class="content">${escapeHtml(payload.new.content || '')}</div>
+        </div>`;
+      container.insertAdjacentHTML('afterbegin', html);
+    }).subscribe();
+
+  } catch(err){
+    container.innerHTML = '<div class="card">Erreur: ' + (err.message||err) + '</div>';
+    console.error(err);
+  }
+
+  // helper escape
+  function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+  // placeholder functions used from here
+  window.reactPost = async function(postId,type){
+    // create reaction row in "reactions" table
+    try{
+      const user = (await supabase.auth.getUser()).data?.user;
+      if(!user){ alert('Connecte-toi pour réagir'); return; }
+      await supabase.from('reactions').insert({ post_id: postId, user_id: user.id, type });
+      alert('Réaction envoyée');
+    }catch(e){ console.error(e); alert('Erreur réaction'); }
+  };
+
+  window.openComments = async function(postId){
+    const area = document.getElementById('comments-for-'+postId);
+    area.innerHTML = 'Chargement des commentaires...';
+    try{
+      const { data } = await supabase.from('comments').select('id,user_id,content,created_at').eq('post_id', postId).order('created_at',{ascending:true});
+      if(!data || data.length===0) area.innerHTML = '<div class="muted">Pas encore de commentaires</div>';
+      else area.innerHTML = data.map(c=>`<div style="margin-bottom:6px"><strong>${escapeHtml(c.user_id)}</strong> • ${new Date(c.created_at).toLocaleString()}<div>${escapeHtml(c.content)}</div></div>`).join('');
+      // quick input box
+      area.insertAdjacentHTML('beforeend', `<div style="margin-top:8px"><input id="c-in-${postId}" placeholder="Écrire un commentaire..." style="padding:8px;border-radius:8px;border:1px solid #e5e7eb;width:70%"><button class="btn" onclick="submitComment(${postId})">Envoyer</button></div>`);
+    }catch(e){ area.innerHTML = 'Erreur chargement'; console.error(e); }
+  };
+
+  window.submitComment = async function(postId){
+    const inpt = document.getElementById('c-in-'+postId);
+    const val = inpt.value.trim();
+    if(!val) return alert('Écris quelque chose');
+    try{
+      const user = (await supabase.auth.getUser()).data?.user;
+      if(!user){ alert('Connecte-toi pour commenter'); return; }
+      await supabase.from('comments').insert({ post_id: postId, user_id: user.id, content: val });
+      inpt.value=''; alert('Commentaire envoyé');
+    }catch(e){ console.error(e); alert('Erreur'); }
+  };
+})();
+</script>
