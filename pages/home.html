@@ -16,12 +16,18 @@
 
 <script>
 (async function init_home(){
+  // --- CORRECTION : Initialiser le client Supabase correctement ---
+  // Note : SUPA_URL et SUPA_KEY sont définis dans le fichier parent main.html,
+  // mais pour que ce code soit autonome, on suppose qu'ils sont disponibles ici.
+  // Si ce code est injecté dans main.html, il utilisera le client déjà créé.
+  // Par sécurité, on utilise la variable "supabaseClient" définie dans main.html
+  
   const container = document.getElementById('feed-container');
   container.innerHTML = '<div class="card muted">Chargement des posts...</div>';
 
-  // fetch posts from Supabase (table "posts" expected)
   try {
-    const { data, error } = await supabase
+    // --- CORRECTION : Utiliser "supabaseClient" ---
+    const { data, error } = await supabaseClient
       .from('posts')
       .select('id, admin_id, content, image_url, created_at')
       .order('created_at', { ascending: false })
@@ -49,9 +55,8 @@
       `;
     }).join('');
 
-    // subscribe to new posts in realtime
-    supabase.channel('public:posts').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => {
-      // prepend new post
+    // --- CORRECTION : Utiliser "supabaseClient" ---
+    supabaseClient.channel('public:posts').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => {
       const html = `
         <div class="card post" data-id="${payload.new.id}">
           <div class="meta">publié par <strong>${escapeHtml(payload.new.admin_id || 'admin')}</strong> • ${new Date(payload.new.created_at).toLocaleString()}</div>
@@ -65,16 +70,15 @@
     console.error(err);
   }
 
-  // helper escape
   function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-  // placeholder functions used from here
   window.reactPost = async function(postId,type){
-    // create reaction row in "reactions" table
     try{
-      const user = (await supabase.auth.getUser()).data?.user;
+      // --- CORRECTION : Utiliser "supabaseClient" ---
+      const user = (await supabaseClient.auth.getUser()).data?.user;
       if(!user){ alert('Connecte-toi pour réagir'); return; }
-      await supabase.from('reactions').insert({ post_id: postId, user_id: user.id, type });
+      // --- CORRECTION : Utiliser "supabaseClient" ---
+      await supabaseClient.from('reactions').insert({ post_id: postId, user_id: user.id, type });
       alert('Réaction envoyée');
     }catch(e){ console.error(e); alert('Erreur réaction'); }
   };
@@ -83,10 +87,10 @@
     const area = document.getElementById('comments-for-'+postId);
     area.innerHTML = 'Chargement des commentaires...';
     try{
-      const { data } = await supabase.from('comments').select('id,user_id,content,created_at').eq('post_id', postId).order('created_at',{ascending:true});
+      // --- CORRECTION : Utiliser "supabaseClient" ---
+      const { data } = await supabaseClient.from('comments').select('id,user_id,content,created_at').eq('post_id', postId).order('created_at',{ascending:true});
       if(!data || data.length===0) area.innerHTML = '<div class="muted">Pas encore de commentaires</div>';
       else area.innerHTML = data.map(c=>`<div style="margin-bottom:6px"><strong>${escapeHtml(c.user_id)}</strong> • ${new Date(c.created_at).toLocaleString()}<div>${escapeHtml(c.content)}</div></div>`).join('');
-      // quick input box
       area.insertAdjacentHTML('beforeend', `<div style="margin-top:8px"><input id="c-in-${postId}" placeholder="Écrire un commentaire..." style="padding:8px;border-radius:8px;border:1px solid #e5e7eb;width:70%"><button class="btn" onclick="submitComment(${postId})">Envoyer</button></div>`);
     }catch(e){ area.innerHTML = 'Erreur chargement'; console.error(e); }
   };
@@ -96,9 +100,11 @@
     const val = inpt.value.trim();
     if(!val) return alert('Écris quelque chose');
     try{
-      const user = (await supabase.auth.getUser()).data?.user;
+      // --- CORRECTION : Utiliser "supabaseClient" ---
+      const user = (await supabaseClient.auth.getUser()).data?.user;
       if(!user){ alert('Connecte-toi pour commenter'); return; }
-      await supabase.from('comments').insert({ post_id: postId, user_id: user.id, content: val });
+      // --- CORRECTION : Utiliser "supabaseClient" ---
+      await supabaseClient.from('comments').insert({ post_id: postId, user_id: user.id, content: val });
       inpt.value=''; alert('Commentaire envoyé');
     }catch(e){ console.error(e); alert('Erreur'); }
   };
