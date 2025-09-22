@@ -40,20 +40,23 @@
 </div>
 
 <script>
-// --- Correction : On attend que le HTML soit chargé avant d'exécuter le script ---
 document.addEventListener('DOMContentLoaded', () => {
   const SUPA_URL = 'https://rrcbprbxgonzsqldhfil.supabase.co';
   const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyY2JwcmJ4Z29uenNxbGRoZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MzY1NjUsImV4cCI6MjA3NDExMjU2NX0.-C7VtLJA7ZLByprNBsMKSIKnH7HubPzgpIXyKEGYwrA';
-  const supabase = supabaseJs.createClient(SUPA_URL, SUPA_KEY);
+  
+  // --- CORRECTION ICI ---
+  // On utilise l'objet global "supabase" fourni par le script CDN.
+  const { createClient } = supabase; 
+  const supabaseClient = createClient(SUPA_URL, SUPA_KEY);
 
-  // --- Les variables sont maintenant à l'intérieur de l'écouteur d'événement ---
   const msg = document.getElementById('msg');
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
 
   async function signIn(){
     msg.textContent = 'Connexion en cours...';
-    const { error } = await supabase.auth.signInWithPassword({ 
+    // On utilise notre client initialisé "supabaseClient"
+    const { error } = await supabaseClient.auth.signInWithPassword({ 
       email: emailInput.value, 
       password: passwordInput.value 
     });
@@ -66,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function signUp(){
     msg.textContent = 'Création de compte...';
-    const { data, error } = await supabase.auth.signUp({ 
+    const { data, error } = await supabaseClient.auth.signUp({ 
       email: emailInput.value, 
       password: passwordInput.value 
     });
@@ -81,14 +84,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const email = emailInput.value;
     if(!email){ msg.textContent = 'Entrez votre email d\'abord'; return;}
     msg.textContent = 'Envoi du lien de réinitialisation...';
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, { 
+    const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, { 
       redirectTo: location.origin + '/auth.html' 
     });
     if(error) msg.textContent = 'Erreur : ' + error.message;
     else msg.textContent = 'Lien envoyé. Vérifie ta boîte mail.';
   }
 
-  // --- Correction : On attache les événements ici ---
   document.getElementById('signInBtn').addEventListener('click', signIn);
   document.getElementById('signUpBtn').addEventListener('click', signUp);
   document.getElementById('resetLink').addEventListener('click', sendReset);
