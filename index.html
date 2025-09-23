@@ -6,281 +6,172 @@
     <title>Authentification</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        :root {
-            --primary-color: #3b82f6;
-            --secondary-color: #6b7280;
-            --background-color: #f9fafb;
-            --surface-color: #ffffff;
-            --error-color: #ef4444;
-            --success-color: #22c55e;
-            --border-color: #d1d5db;
-            --text-color: #111827;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-        .auth-container {
-            background-color: var(--surface-color);
-            padding: 2.5rem;
-            border-radius: 0.75rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            width: 100%;
-            max-width: 400px;
-            box-sizing: border-box;
-        }
-        .auth-view {
-            display: none;
-        }
-        .auth-view.active {
-            display: block;
-        }
-        h2 {
-            text-align: center;
-            font-size: 1.875rem;
-            font-weight: 700;
-            margin-bottom: 2rem;
-        }
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: var(--secondary-color);
-        }
-        .form-group input {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            box-sizing: border-box;
-            font-size: 1rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-        }
-        .btn {
-            width: 100%;
-            padding: 0.875rem;
-            border: none;
-            border-radius: 0.5rem;
-            background-color: var(--primary-color);
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .btn:hover {
-            background-color: #2563eb;
-        }
-        .switch-link {
-            text-align: center;
-            margin-top: 1.5rem;
-        }
-        .switch-link a {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: 500;
-        }
-        .switch-link a:hover {
-            text-decoration: underline;
-        }
-        .forgot-password-link {
-            display: block;
-            text-align: right;
-            font-size: 0.875rem;
-            margin-top: -1rem;
-            margin-bottom: 1.5rem;
-        }
-        .message {
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-            text-align: center;
-            font-weight: 500;
-        }
-        .message.error {
-            background-color: #fee2e2;
-            color: #b91c1c;
-        }
-        .message.success {
-            background-color: #dcfce7;
-            color: #166534;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f2f5; margin: 0; }
+        .auth-container { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h1 { text-align: center; color: #333; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; color: #666; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: background-color 0.3s; }
+        button:hover { background-color: #0056b3; }
+        .auth-switch, .forgot-password { text-align: center; margin-top: 15px; }
+        .auth-switch a, .forgot-password a { color: #007bff; text-decoration: none; cursor: pointer; }
+        .message { text-align: center; padding: 10px; margin-bottom: 15px; border-radius: 4px; display: none; }
+        .message.success { background-color: #d4edda; color: #155724; }
+        .message.error { background-color: #f8d7da; color: #721c24; }
+        #resetPasswordForm { display: none; }
     </style>
 </head>
 <body>
+
     <div class="auth-container">
-        <div id="message-area"></div>
-
-        <div id="login-view" class="auth-view active">
-            <h2>Connexion</h2>
-            <form id="login-form">
+        <div id="authForm">
+            <h1 id="formTitle">Connexion</h1>
+            <div id="message" class="message"></div>
+            <form id="loginForm">
                 <div class="form-group">
-                    <label for="login-email">Email</label>
-                    <input type="email" id="login-email" required>
+                    <label for="email">Email</label>
+                    <input type="email" id="email" required>
                 </div>
                 <div class="form-group">
-                    <label for="login-password">Mot de passe</label>
-                    <input type="password" id="login-password" required>
+                    <label for="password">Mot de passe</label>
+                    <input type="password" id="password" required>
                 </div>
-                 <a href="#" id="show-forgot-password" class="forgot-password-link">Mot de passe oublié ?</a>
-                <button type="submit" class="btn">Se connecter</button>
+                <button type="submit" id="submitButton">Se connecter</button>
             </form>
-            <p class="switch-link">Pas de compte ? <a href="#" id="show-signup">Inscrivez-vous</a></p>
+            <div class="forgot-password">
+                <a id="forgotPasswordLink">Mot de passe oublié ?</a>
+            </div>
+            <div class="auth-switch">
+                <p>Pas de compte ? <a id="switchToSignup">Inscrivez-vous</a></p>
+            </div>
         </div>
 
-        <div id="signup-view" class="auth-view">
-            <h2>Inscription</h2>
-            <form id="signup-form">
+        <div id="resetPasswordForm">
+             <h1>Nouveau mot de passe</h1>
+             <div id="resetMessage" class="message"></div>
+             <form id="updatePasswordForm">
                 <div class="form-group">
-                    <label for="signup-email">Email</label>
-                    <input type="email" id="signup-email" required>
+                    <label for="newPassword">Nouveau mot de passe</label>
+                    <input type="password" id="newPassword" required>
                 </div>
-                <div class="form-group">
-                    <label for="signup-password">Mot de passe</label>
-                    <input type="password" id="signup-password" required>
-                </div>
-                <button type="submit" class="btn">S'inscrire</button>
-            </form>
-            <p class="switch-link">Déjà un compte ? <a href="#" id="show-login">Connectez-vous</a></p>
-        </div>
-        
-        <div id="forgot-password-view" class="auth-view">
-            <h2>Mot de passe oublié</h2>
-            <p style="text-align: center; color: var(--secondary-color); margin-bottom: 1.5rem;">Entrez votre email pour recevoir un lien de réinitialisation.</p>
-            <form id="forgot-password-form">
-                <div class="form-group">
-                    <label for="forgot-email">Email</label>
-                    <input type="email" id="forgot-email" required>
-                </div>
-                <button type="submit" class="btn">Envoyer le lien</button>
-            </form>
-             <p class="switch-link"><a href="#" id="back-to-login-forgot">Retour à la connexion</a></p>
-        </div>
-
-        <div id="reset-password-view" class="auth-view">
-            <h2>Nouveau mot de passe</h2>
-            <form id="reset-password-form">
-                <div class="form-group">
-                    <label for="new-password">Entrez votre nouveau mot de passe</label>
-                    <input type="password" id="new-password" required>
-                </div>
-                <button type="submit" class="btn">Mettre à jour</button>
+                <button type="submit">Mettre à jour</button>
             </form>
         </div>
     </div>
 
-    <script type="module">
-        const supabaseUrl = 'https://rrcbprbxgonzsqldhfil.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyY2JwcmJ4Z29uenNxbGRoZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MzY1NjUsImV4cCI6MjA3NDExMjU2NX0.-C7VtLJA7ZLByprNBsMKSIKnH7HubPzgpIXyKEGYwrA';
-        const { createClient } = supabase.supabase;
-        const _supabase = createClient(supabaseUrl, supabaseKey);
+    <script>
+        const SUPABASE_URL = 'https://rrcbprbxgonzsqldhfil.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyY2JwcmJ4Z29uenNxbGRoZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MzY1NjUsImV4cCI6MjA3NDExMjU2NX0.-C7VtLJA7ZLByprNBsMKSIKnH7HubPzgpIXyKEGYwrA';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const loginView = document.getElementById('login-view');
-        const signupView = document.getElementById('signup-view');
-        const forgotPasswordView = document.getElementById('forgot-password-view');
-        const resetPasswordView = document.getElementById('reset-password-view');
-        const messageArea = document.getElementById('message-area');
-
-        function switchView(viewToShow) {
-            document.querySelectorAll('.auth-view').forEach(view => view.classList.remove('active'));
-            viewToShow.classList.add('active');
-            messageArea.innerHTML = '';
-        }
-
-        document.getElementById('show-signup').addEventListener('click', (e) => {
-            e.preventDefault();
-            switchView(signupView);
-        });
-        document.getElementById('show-login').addEventListener('click', (e) => {
-            e.preventDefault();
-            switchView(loginView);
-        });
-        document.getElementById('show-forgot-password').addEventListener('click', (e) => {
-            e.preventDefault();
-            switchView(forgotPasswordView);
-        });
-        document.getElementById('back-to-login-forgot').addEventListener('click', (e) => {
-            e.preventDefault();
-            switchView(loginView);
-        });
+        // DOM Elements
+        const authForm = document.getElementById('authForm');
+        const loginForm = document.getElementById('loginForm');
+        const resetPasswordForm = document.getElementById('resetPasswordForm');
+        const updatePasswordForm = document.getElementById('updatePasswordForm');
         
-        function showMessage(type, text) {
-            messageArea.innerHTML = `<div class="message ${type}">${text}</div>`;
-        }
+        const formTitle = document.getElementById('formTitle');
+        const submitButton = document.getElementById('submitButton');
+        const switchToSignup = document.getElementById('switchToSignup');
+        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+        const messageDiv = document.getElementById('message');
+        const resetMessageDiv = document.getElementById('resetMessage');
 
-        // Login
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
-            if (error) {
-                showMessage('error', `Erreur de connexion : ${error.message}`);
+        let isLogin = true;
+
+        // --- UTILITY FUNCTIONS ---
+        const showMessage = (element, text, type = 'error') => {
+            element.textContent = text;
+            element.className = `message ${type}`;
+            element.style.display = 'block';
+        };
+
+        const hideMessage = (element) => {
+            element.style.display = 'none';
+        };
+
+        // --- AUTH LOGIC ---
+        const handleAuthAction = async (event) => {
+            event.preventDefault();
+            hideMessage(messageDiv);
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            let error;
+
+            if (isLogin) {
+                const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+                error = signInError;
             } else {
+                const { error: signUpError } = await supabase.auth.signUp({ email, password });
+                if (!signUpError) {
+                     showMessage(messageDiv, "Inscription réussie ! Veuillez vérifier votre email pour activer votre compte.", 'success');
+                     return; // Don't redirect immediately, user needs to verify
+                }
+                error = signUpError;
+            }
+
+            if (error) {
+                showMessage(messageDiv, error.message);
+            } else if (isLogin) {
                 window.location.href = 'main.html';
             }
+        };
+
+        const handlePasswordResetRequest = async () => {
+            hideMessage(messageDiv);
+            const email = prompt("Veuillez entrer votre adresse e-mail pour recevoir un lien de réinitialisation :");
+            if (email) {
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.href.split('#')[0], // Redirect to the same page
+                });
+                if (error) {
+                    showMessage(messageDiv, error.message);
+                } else {
+                    showMessage(messageDiv, "Un lien de réinitialisation a été envoyé à votre adresse e-mail.", 'success');
+                }
+            }
+        };
+
+        const handlePasswordUpdate = async (event) => {
+            event.preventDefault();
+            hideMessage(resetMessageDiv);
+            const newPassword = document.getElementById('newPassword').value;
+            const { error } = await supabase.auth.updateUser({ password: newPassword });
+            
+            if (error) {
+                showMessage(resetMessageDiv, error.message);
+            } else {
+                showMessage(resetMessageDiv, "Votre mot de passe a été mis à jour avec succès. Vous pouvez maintenant vous connecter.", 'success');
+                setTimeout(() => {
+                    resetPasswordForm.style.display = 'none';
+                    authForm.style.display = 'block';
+                    // Clear the hash from the URL
+                    window.location.hash = '';
+                }, 3000);
+            }
+        };
+
+        // --- EVENT LISTENERS ---
+        loginForm.addEventListener('submit', handleAuthAction);
+        forgotPasswordLink.addEventListener('click', handlePasswordResetRequest);
+        updatePasswordForm.addEventListener('submit', handlePasswordUpdate);
+
+        switchToSignup.addEventListener('click', (e) => {
+            e.preventDefault();
+            isLogin = !isLogin;
+            formTitle.textContent = isLogin ? 'Connexion' : 'Inscription';
+            submitButton.textContent = isLogin ? 'Se connecter' : "S'inscrire";
+            switchToSignup.innerHTML = isLogin ? 'Inscrivez-vous' : 'Connectez-vous';
+            hideMessage(messageDiv);
         });
 
-        // Signup
-        document.getElementById('signup-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-            const { data, error } = await _supabase.auth.signUp({ email, password });
-            if (error) {
-                showMessage('error', `Erreur d'inscription : ${error.message}`);
-            } else {
-                showMessage('success', 'Inscription réussie ! Veuillez vérifier votre email pour confirmer votre compte.');
-            }
-        });
-        
-        // Forgot Password
-        document.getElementById('forgot-password-form').addEventListener('submit', async(e) => {
-            e.preventDefault();
-            const email = document.getElementById('forgot-email').value;
-            const { data, error } = await _supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: window.location.origin + window.location.pathname,
-            });
-            if (error) {
-                showMessage('error', error.message);
-            } else {
-                showMessage('success', 'Un lien de réinitialisation a été envoyé à votre adresse e-mail.');
-            }
-        });
-        
-        // Reset Password
-        document.getElementById('reset-password-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const password = document.getElementById('new-password').value;
-            const { data, error } = await _supabase.auth.updateUser({ password });
-
-            if (error) {
-                showMessage('error', `Erreur: ${error.message}`);
-            } else {
-                showMessage('success', 'Votre mot de passe a été mis à jour avec succès.');
-                setTimeout(() => switchView(loginView), 3000);
-            }
-        });
-        
-        // Check for password recovery link on page load
-        _supabase.auth.onAuthStateChange(async (event, session) => {
+        // --- PAGE LOAD LOGIC ---
+        // Check for password recovery token in URL hash
+        supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'PASSWORD_RECOVERY') {
-                switchView(resetPasswordView);
+                authForm.style.display = 'none';
+                resetPasswordForm.style.display = 'block';
             }
         });
 
