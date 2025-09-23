@@ -1,112 +1,227 @@
-<div class="card">
-  <div style="display:flex;justify-content:space-between;align-items:center">
-    <strong>Fil d'actualité</strong>
-    <div class="muted">Dernières publications</div>
-  </div>
-</div>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f0f2f5; }
+        .navbar { background-color: #fff; padding: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-around; position: fixed; top: 0; width: 100%; z-index: 1000; }
+        .navbar a { text-decoration: none; color: #333; font-weight: bold; padding: 0.5rem 1rem; border-radius: 6px; }
+        .navbar a.active, .navbar a:hover { background-color: #e7f3ff; color: #007bff; }
+        .content { padding: 6rem 1rem 1rem 1rem; max-width: 800px; margin: 0 auto; }
+        #logout-button { background: #dc3545; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; }
+        #logout-button:hover { background: #c82333; }
 
-<div id="feed-container"></div>
+        .post-container { background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1.5rem; padding: 1.5rem; }
+        .post-header { font-weight: bold; margin-bottom: 1rem; }
+        .post-content p { margin-top: 0; }
+        .post-content img { max-width: 100%; border-radius: 8px; margin-top: 1rem; }
+        .post-actions { display: flex; gap: 0.5rem; margin-top: 1rem; border-top: 1px solid #eee; padding-top: 1rem; }
+        .reaction-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; transition: transform 0.2s; }
+        .reaction-btn:hover { transform: scale(1.2); }
+        .comments-section { margin-top: 1rem; }
+        .comment { background: #f0f2f5; padding: 0.75rem; border-radius: 6px; margin-top: 0.5rem; }
+        .comment-form { display: flex; gap: 0.5rem; margin-top: 1rem; }
+        .comment-form input { flex-grow: 1; border: 1px solid #ccc; border-radius: 20px; padding: 0.5rem 1rem; }
+        .comment-form button { background: #007bff; color: white; border: none; border-radius: 20px; padding: 0.5rem 1rem; cursor: pointer; }
+    </style>
+</head>
+<body>
 
-<style>
-  /* styles spécifiques home (scoped inside page) */
-  #feed-container .post{margin-bottom:12px}
-  .post .meta{font-size:13px;color:var(--muted);margin-bottom:8px}
-  .post .content{font-size:15px}
-</style>
+    <nav class="navbar">
+        <a href="home.html" class="nav-link active">Home</a>
+        <a href="messages.html" class="nav-link">Messages</a>
+        <a href="groupes.html" class="nav-link">Groupes</a>
+        <a href="publier.html" class="nav-link">Publier</a>
+        <a href="notifications.html" class="nav-link">Notifications</a>
+        <button id="logout-button">Déconnexion</button>
+    </nav>
 
-<script>
-(async function init_home(){
-  // --- CORRECTION : Initialiser le client Supabase correctement ---
-  // Note : SUPA_URL et SUPA_KEY sont définis dans le fichier parent main.html,
-  // mais pour que ce code soit autonome, on suppose qu'ils sont disponibles ici.
-  // Si ce code est injecté dans main.html, il utilisera le client déjà créé.
-  // Par sécurité, on utilise la variable "supabaseClient" définie dans main.html
-  
-  const container = document.getElementById('feed-container');
-  container.innerHTML = '<div class="card muted">Chargement des posts...</div>';
+    <main class="content">
+        <h1>Fil d'actualité</h1>
+        <div id="posts-feed">
+            </div>
+    </main>
 
-  try {
-    // --- CORRECTION : Utiliser "supabaseClient" ---
-    const { data, error } = await supabaseClient
-      .from('posts')
-      .select('id, admin_id, content, image_url, created_at')
-      .order('created_at', { ascending: false })
-      .limit(50);
+    <script>
+        const SUPABASE_URL = 'https://rrcbprbxgonzsqldhfil.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyY2JwcmJ4Z29uenNxbGRoZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MzY1NjUsImV4cCI6MjA3NDExMjU2NX0.-C7VtLJA7ZLByprNBsMKSIKnH7HubPzgpIXyKEGYwrA';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    if(error) throw error;
-    if(!data || data.length === 0){
-      container.innerHTML = '<div class="card muted">Aucune publication pour le moment.</div>';
-      return;
-    }
+        let currentUser = null;
 
-    container.innerHTML = data.map(post => {
-      const imgHtml = post.image_url ? `<img src="${escapeHtml(post.image_url)}" class="media-thumb" alt="media">` : '';
-      return `
-        <div class="card post" data-id="${post.id}">
-          <div class="meta">publié par <strong>${escapeHtml(post.admin_id || 'admin')}</strong> • ${new Date(post.created_at).toLocaleString()}</div>
-          <div class="content">${escapeHtml(post.content || '')}</div>
-          ${imgHtml}
-          <div class="row" style="margin-top:8px">
-            <button class="btn" onclick="reactPost(${post.id}, 'like')">👍 Réagir</button>
-            <button class="btn ghost" onclick="openComments(${post.id})">💬 Commentaires</button>
-          </div>
-          <div id="comments-for-${post.id}" class="muted" style="margin-top:8px"></div>
-        </div>
-      `;
-    }).join('');
+        // Vérifier la session utilisateur
+        async function checkAndLoad() {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (!session) {
+                window.location.href = 'auth.html';
+                return;
+            }
+            currentUser = session.user;
+            await displayPosts();
+        }
 
-    // --- CORRECTION : Utiliser "supabaseClient" ---
-    supabaseClient.channel('public:posts').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => {
-      const html = `
-        <div class="card post" data-id="${payload.new.id}">
-          <div class="meta">publié par <strong>${escapeHtml(payload.new.admin_id || 'admin')}</strong> • ${new Date(payload.new.created_at).toLocaleString()}</div>
-          <div class="content">${escapeHtml(payload.new.content || '')}</div>
-        </div>`;
-      container.insertAdjacentHTML('afterbegin', html);
-    }).subscribe();
+        // Afficher les articles
+        async function displayPosts() {
+            const feed = document.getElementById('posts-feed');
+            feed.innerHTML = 'Chargement des articles...';
 
-  } catch(err){
-    container.innerHTML = '<div class="card">Erreur: ' + (err.message||err) + '</div>';
-    console.error(err);
-  }
+            // 1. Essayer de charger depuis le cache
+            const cachedPosts = sessionStorage.getItem('posts');
+            let posts = [];
 
-  function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+            if (cachedPosts) {
+                posts = JSON.parse(cachedPosts);
+                console.log("Articles chargés depuis le cache.");
+            } else {
+                // 2. Sinon, récupérer depuis Supabase
+                console.log("Cache vide, récupération depuis Supabase...");
+                const { data, error } = await supabase
+                    .from('posts')
+                    .select(`*, user:profiles(username)`)
+                    .eq('is_published', true)
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    feed.innerHTML = "Erreur lors du chargement des articles.";
+                    console.error(error);
+                    return;
+                }
+                posts = data;
+                sessionStorage.setItem('posts', JSON.stringify(posts)); // Mettre en cache
+            }
 
-  window.reactPost = async function(postId,type){
-    try{
-      // --- CORRECTION : Utiliser "supabaseClient" ---
-      const user = (await supabaseClient.auth.getUser()).data?.user;
-      if(!user){ alert('Connecte-toi pour réagir'); return; }
-      // --- CORRECTION : Utiliser "supabaseClient" ---
-      await supabaseClient.from('reactions').insert({ post_id: postId, user_id: user.id, type });
-      alert('Réaction envoyée');
-    }catch(e){ console.error(e); alert('Erreur réaction'); }
-  };
+            if (posts.length === 0) {
+                feed.innerHTML = "Aucun article à afficher pour le moment.";
+                return;
+            }
 
-  window.openComments = async function(postId){
-    const area = document.getElementById('comments-for-'+postId);
-    area.innerHTML = 'Chargement des commentaires...';
-    try{
-      // --- CORRECTION : Utiliser "supabaseClient" ---
-      const { data } = await supabaseClient.from('comments').select('id,user_id,content,created_at').eq('post_id', postId).order('created_at',{ascending:true});
-      if(!data || data.length===0) area.innerHTML = '<div class="muted">Pas encore de commentaires</div>';
-      else area.innerHTML = data.map(c=>`<div style="margin-bottom:6px"><strong>${escapeHtml(c.user_id)}</strong> • ${new Date(c.created_at).toLocaleString()}<div>${escapeHtml(c.content)}</div></div>`).join('');
-      area.insertAdjacentHTML('beforeend', `<div style="margin-top:8px"><input id="c-in-${postId}" placeholder="Écrire un commentaire..." style="padding:8px;border-radius:8px;border:1px solid #e5e7eb;width:70%"><button class="btn" onclick="submitComment(${postId})">Envoyer</button></div>`);
-    }catch(e){ area.innerHTML = 'Erreur chargement'; console.error(e); }
-  };
+            feed.innerHTML = ''; // Vider le message de chargement
 
-  window.submitComment = async function(postId){
-    const inpt = document.getElementById('c-in-'+postId);
-    const val = inpt.value.trim();
-    if(!val) return alert('Écris quelque chose');
-    try{
-      // --- CORRECTION : Utiliser "supabaseClient" ---
-      const user = (await supabaseClient.auth.getUser()).data?.user;
-      if(!user){ alert('Connecte-toi pour commenter'); return; }
-      // --- CORRECTION : Utiliser "supabaseClient" ---
-      await supabaseClient.from('comments').insert({ post_id: postId, user_id: user.id, content: val });
-      inpt.value=''; alert('Commentaire envoyé');
-    }catch(e){ console.error(e); alert('Erreur'); }
-  };
-})();
-</script>
+            // 3. Construire le HTML pour chaque article
+            for (const post of posts) {
+                const postElement = document.createElement('div');
+                postElement.className = 'post-container';
+                postElement.innerHTML = `
+                    <div class="post-header">
+                        <strong>${post.user?.username || 'Utilisateur anonyme'}</strong>
+                    </div>
+                    <div class="post-content">
+                        <p>${post.content}</p>
+                        ${post.image_url ? `<img src="${post.image_url}" alt="Image du post">` : ''}
+                    </div>
+                    <div class="post-actions" data-post-id="${post.id}">
+                        <button class="reaction-btn">👍</button>
+                        <button class="reaction-btn">❤️</button>
+                        <button class="reaction-btn">🤣</button>
+                        <button class="reaction-btn">😡</button>
+                    </div>
+                    <div class="comments-section" id="comments-for-${post.id}">
+                        </div>
+                    <form class="comment-form" data-post-id="${post.id}">
+                        <input type="text" placeholder="Ajouter un commentaire..." required>
+                        <button type="submit">Publier</button>
+                    </form>
+                `;
+                feed.appendChild(postElement);
+                
+                // Charger les commentaires pour ce post
+                loadComments(post.id);
+            }
+             
+            // Attacher les écouteurs d'événements
+            attachEventListeners();
+        }
+        
+        // Charger les commentaires pour un post spécifique
+        async function loadComments(postId) {
+            const commentsContainer = document.getElementById(`comments-for-${postId}`);
+            const { data: comments, error } = await supabase
+                .from('comments')
+                .select(`*, user:profiles(username)`)
+                .eq('post_id', postId)
+                .is('parent_comment_id', null) // Ne récupérer que les commentaires parents
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                console.error("Erreur de chargement des commentaires:", error);
+                return;
+            }
+
+            commentsContainer.innerHTML = '';
+            comments.forEach(comment => {
+                const commentElement = document.createElement('div');
+                commentElement.className = 'comment';
+                commentElement.innerHTML = `
+                    <strong>${comment.user?.username || 'Anonyme'}:</strong>
+                    <p style="margin: 0.2rem 0;">${comment.content}</p>
+                    <a href="#" class="reply-btn" data-comment-id="${comment.id}">Répondre</a>
+                `;
+                commentsContainer.appendChild(commentElement);
+            });
+        }
+        
+        // Attacher les écouteurs d'événements pour les actions
+        function attachEventListeners() {
+            // Pour les formulaires de commentaire
+            document.querySelectorAll('.comment-form').forEach(form => {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const postId = e.target.dataset.postId;
+                    const input = e.target.querySelector('input');
+                    const content = input.value.trim();
+
+                    if (!content) return;
+
+                    const { error } = await supabase.from('comments').insert({
+                        post_id: postId,
+                        user_id: currentUser.id,
+                        content: content
+                    });
+
+                    if (error) {
+                        console.error('Erreur d\'ajout de commentaire:', error);
+                    } else {
+                        input.value = '';
+                        loadComments(postId); // Recharger les commentaires
+                    }
+                });
+            });
+
+            // Pour les réactions
+            document.querySelectorAll('.reaction-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const postId = e.target.parentElement.dataset.postId;
+                    const reaction = e.target.textContent;
+                    
+                    // Upsert permet de créer ou de mettre à jour la réaction de l'utilisateur
+                    const { error } = await supabase.from('reactions').upsert({
+                        post_id: postId,
+                        user_id: currentUser.id,
+                        reaction_type: reaction
+                    }, { onConflict: 'post_id, user_id' });
+
+                    if (error) {
+                        console.error("Erreur d'ajout de réaction:", error);
+                    } else {
+                        console.log(`Réaction '${reaction}' ajoutée au post ${postId}`);
+                        // Ici, vous pourriez ajouter un feedback visuel
+                    }
+                });
+            });
+        }
+        
+        // Gestion de la déconnexion
+        document.getElementById('logout-button').addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            sessionStorage.clear();
+            window.location.href = 'auth.html';
+        });
+
+        // Lancer l'application
+        document.addEventListener('DOMContentLoaded', checkAndLoad);
+    </script>
+</body>
+</html>
