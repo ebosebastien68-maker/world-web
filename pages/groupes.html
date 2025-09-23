@@ -1,66 +1,12 @@
-<div class="card">
-  <div style="display:flex;justify-content:space-between;align-items:center">
-    <strong>Groupes</strong>
-    <div class="muted">Créer et gérer des groupes</div>
-  </div>
-</div>
-
-<div class="card">
-  <label>Nom du groupe</label>
-  <input id="g-name" placeholder="Ex: Dév Web / Musique" style="padding:8px;border-radius:8px;border:1px solid #e5e7eb;width:60%">
-  <button class="btn" onclick="createGroup()">Créer</button>
-</div>
-
-<div id="group-list"></div>
-
 <style>
-  /* groupes small */
-  #group-list .g{margin-bottom:10px}
+    .groups-container { padding: 20px; text-align: center; }
 </style>
+<div class="groups-container">
+    <h1>Gestion des Groupes</h1>
+    <p>La fonctionnalité de création de groupes et de discussion en groupe sera implémentée ici.</p>
+    <p>Cela inclura un groupe "Général" avec tous les utilisateurs.</p>
+</div>
 
 <script>
-(async function init_groupes(){
-  const list = document.getElementById('group-list');
-  list.innerHTML = '<div class="muted">Chargement des groupes...</div>';
-
-  async function load(){
-    // --- CORRECTION ICI ---
-    const { data, error } = await supabaseClient.from('groups').select('id,name,created_by,created_at').order('created_at',{ascending:false});
-    if(error) { list.innerHTML = '<div class="card">Erreur</div>'; console.error(error); return; }
-    if(!data || data.length===0) { list.innerHTML = '<div class="muted">Aucun groupe. Le groupe Général contient tous les utilisateurs par défaut.</div>'; return; }
-    list.innerHTML = data.map(g => `<div class="card g"><strong>${escapeHtml(g.name)}</strong><div class="muted">créé par ${escapeHtml(g.created_by || 'admin')} • ${new Date(g.created_at).toLocaleString()}</div><div style="margin-top:8px"><button class="btn ghost" onclick="openGroup('${g.id}')">Ouvrir</button> <button class="btn" onclick="addMember('${g.id}')">Ajouter membre</button></div></div>`).join('');
-  }
-  await load();
-
-  window.createGroup = async function(){
-    const n = document.getElementById('g-name').value.trim();
-    if(!n) return alert('Donne un nom');
-    // --- CORRECTION ICI ---
-    const user = (await supabaseClient.auth.getUser()).data?.user;
-    if(!user) return alert('Connecte-toi');
-    try{
-      // --- CORRECTION ICI ---
-      await supabaseClient.from('groups').insert({ name: n, created_by: user.id });
-      document.getElementById('g-name').value='';
-      load();
-      alert('Groupe créé');
-    }catch(e){ console.error(e); alert('Erreur création'); }
-  };
-
-  window.addMember = async function(groupId){
-    const mem = prompt('ID ou email du membre à ajouter');
-    if(!mem) return;
-    try{
-      // --- CORRECTION ICI ---
-      await supabaseClient.from('group_members').insert({ group_id: groupId, user_id: mem });
-      alert('Membre ajouté');
-    }catch(e){ console.error(e); alert('Erreur ajout'); }
-  };
-
-  window.openGroup = async function(groupId){
-    alert('Ouvrir le groupe (implémentation future) — groupe id: ' + groupId);
-  };
-
-  function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-})();
+// Le code JavaScript pour gérer les groupes (création, ajout de membres, messagerie de groupe) sera ajouté ici.
 </script>
