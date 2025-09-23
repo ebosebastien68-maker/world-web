@@ -1,227 +1,136 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f0f2f5; }
-        .navbar { background-color: #fff; padding: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-around; position: fixed; top: 0; width: 100%; z-index: 1000; }
-        .navbar a { text-decoration: none; color: #333; font-weight: bold; padding: 0.5rem 1rem; border-radius: 6px; }
-        .navbar a.active, .navbar a:hover { background-color: #e7f3ff; color: #007bff; }
-        .content { padding: 6rem 1rem 1rem 1rem; max-width: 800px; margin: 0 auto; }
-        #logout-button { background: #dc3545; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; }
-        #logout-button:hover { background: #c82333; }
+<style>
+    .home-container { max-width: 800px; margin: auto; }
+    .post-card { background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; padding: 20px; }
+    .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+    .post-author { font-weight: bold; }
+    .post-content p { margin: 0 0 15px 0; }
+    .post-content img { max-width: 100%; border-radius: 8px; }
+    .post-actions { display: flex; justify-content: space-around; border-top: 1px solid #e9ebee; padding-top: 10px; }
+    .action-btn { background: none; border: none; cursor: pointer; font-size: 20px; transition: transform 0.2s; }
+    .action-btn:hover { transform: scale(1.2); }
+    .comments-section { margin-top: 20px; }
+    .comment { margin-bottom: 10px; padding-left: 15px; border-left: 2px solid #eee; }
+    .comment-form { display: flex; gap: 10px; margin-top: 10px; }
+    .comment-form input { flex-grow: 1; padding: 8px; border-radius: 18px; border: 1px solid #ccc; }
+    .comment-form button { padding: 8px 15px; border-radius: 18px; border: none; background-color: #007bff; color: white; cursor: pointer; }
+</style>
 
-        .post-container { background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1.5rem; padding: 1.5rem; }
-        .post-header { font-weight: bold; margin-bottom: 1rem; }
-        .post-content p { margin-top: 0; }
-        .post-content img { max-width: 100%; border-radius: 8px; margin-top: 1rem; }
-        .post-actions { display: flex; gap: 0.5rem; margin-top: 1rem; border-top: 1px solid #eee; padding-top: 1rem; }
-        .reaction-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; transition: transform 0.2s; }
-        .reaction-btn:hover { transform: scale(1.2); }
-        .comments-section { margin-top: 1rem; }
-        .comment { background: #f0f2f5; padding: 0.75rem; border-radius: 6px; margin-top: 0.5rem; }
-        .comment-form { display: flex; gap: 0.5rem; margin-top: 1rem; }
-        .comment-form input { flex-grow: 1; border: 1px solid #ccc; border-radius: 20px; padding: 0.5rem 1rem; }
-        .comment-form button { background: #007bff; color: white; border: none; border-radius: 20px; padding: 0.5rem 1rem; cursor: pointer; }
-    </style>
-</head>
-<body>
+<div class="home-container" id="posts-feed">
+    </div>
 
-    <nav class="navbar">
-        <a href="home.html" class="nav-link active">Home</a>
-        <a href="messages.html" class="nav-link">Messages</a>
-        <a href="groupes.html" class="nav-link">Groupes</a>
-        <a href="publier.html" class="nav-link">Publier</a>
-        <a href="notifications.html" class="nav-link">Notifications</a>
-        <button id="logout-button">Déconnexion</button>
-    </nav>
+<script>
+// Ce script s'exécutera une fois que ce HTML est injecté dans main.html
+(async function() {
+    // La variable `supabase` est déjà définie dans main.html et est donc globale
+    const postsFeed = document.getElementById('posts-feed');
+    const { data: { user } } = await supabase.auth.getUser();
 
-    <main class="content">
-        <h1>Fil d'actualité</h1>
-        <div id="posts-feed">
-            </div>
-    </main>
+    if (!postsFeed) return;
 
-    <script>
-        const SUPABASE_URL = 'https://rrcbprbxgonzsqldhfil.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyY2JwcmJ4Z29uenNxbGRoZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MzY1NjUsImV4cCI6MjA3NDExMjU2NX0.-C7VtLJA7ZLByprNBsMKSIKnH7HubPzgpIXyKEGYwrA';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const fetchPosts = async () => {
+        const { data: posts, error } = await supabase
+            .from('posts')
+            .select(`
+                *,
+                profiles ( username ),
+                comments ( *, profiles ( username ) ),
+                reactions ( * )
+            `)
+            .eq('is_published', true)
+            .order('created_at', { ascending: false });
 
-        let currentUser = null;
-
-        // Vérifier la session utilisateur
-        async function checkAndLoad() {
-            const { data: { session }, error } = await supabase.auth.getSession();
-            if (!session) {
-                window.location.href = 'auth.html';
-                return;
-            }
-            currentUser = session.user;
-            await displayPosts();
+        if (error) {
+            console.error("Erreur de chargement des posts:", error);
+            postsFeed.innerHTML = '<p>Impossible de charger les articles.</p>';
+            return;
         }
 
-        // Afficher les articles
-        async function displayPosts() {
-            const feed = document.getElementById('posts-feed');
-            feed.innerHTML = 'Chargement des articles...';
+        renderPosts(posts);
+    };
 
-            // 1. Essayer de charger depuis le cache
-            const cachedPosts = sessionStorage.getItem('posts');
-            let posts = [];
+    const renderPosts = (posts) => {
+        if (posts.length === 0) {
+            postsFeed.innerHTML = '<p>Aucun article à afficher pour le moment.</p>';
+            return;
+        }
 
-            if (cachedPosts) {
-                posts = JSON.parse(cachedPosts);
-                console.log("Articles chargés depuis le cache.");
-            } else {
-                // 2. Sinon, récupérer depuis Supabase
-                console.log("Cache vide, récupération depuis Supabase...");
-                const { data, error } = await supabase
-                    .from('posts')
-                    .select(`*, user:profiles(username)`)
-                    .eq('is_published', true)
-                    .order('created_at', { ascending: false });
-                
-                if (error) {
-                    feed.innerHTML = "Erreur lors du chargement des articles.";
-                    console.error(error);
-                    return;
-                }
-                posts = data;
-                sessionStorage.setItem('posts', JSON.stringify(posts)); // Mettre en cache
-            }
-
-            if (posts.length === 0) {
-                feed.innerHTML = "Aucun article à afficher pour le moment.";
-                return;
-            }
-
-            feed.innerHTML = ''; // Vider le message de chargement
-
-            // 3. Construire le HTML pour chaque article
-            for (const post of posts) {
-                const postElement = document.createElement('div');
-                postElement.className = 'post-container';
-                postElement.innerHTML = `
-                    <div class="post-header">
-                        <strong>${post.user?.username || 'Utilisateur anonyme'}</strong>
-                    </div>
-                    <div class="post-content">
-                        <p>${post.content}</p>
-                        ${post.image_url ? `<img src="${post.image_url}" alt="Image du post">` : ''}
-                    </div>
-                    <div class="post-actions" data-post-id="${post.id}">
-                        <button class="reaction-btn">👍</button>
-                        <button class="reaction-btn">❤️</button>
-                        <button class="reaction-btn">🤣</button>
-                        <button class="reaction-btn">😡</button>
-                    </div>
-                    <div class="comments-section" id="comments-for-${post.id}">
+        postsFeed.innerHTML = posts.map(post => `
+            <div class="post-card" data-post-id="${post.id}">
+                <div class="post-header">
+                    <span class="post-author">${post.profiles.username || 'Anonyme'}</span>
+                </div>
+                <div class="post-content">
+                    <p>${post.content}</p>
+                    ${post.image_url ? `<img src="${post.image_url}" alt="Image du post">` : ''}
+                    ${post.whatsapp_number ? `<a href="https://wa.me/${post.whatsapp_number}" target="_blank">Contacter sur WhatsApp</a>` : ''}
+                </div>
+                <div class="post-actions">
+                    <button class="action-btn reaction-btn" data-reaction="👍">👍</button>
+                    <button class="action-btn reaction-btn" data-reaction="❤️">❤️</button>
+                    <button class="action-btn reaction-btn" data-reaction="🤣">🤣</button>
+                    <button class="action-btn reaction-btn" data-reaction="😡">😡</button>
+                </div>
+                <div class="comments-section">
+                    ${post.comments.map(comment => `
+                        <div class="comment">
+                            <strong>${comment.profiles.username || 'Anonyme'}:</strong>
+                            <p>${comment.content}</p>
+                            <button class="reply-btn" data-comment-id="${comment.id}">Répondre</button>
                         </div>
-                    <form class="comment-form" data-post-id="${post.id}">
+                    `).join('')}
+                    <form class="comment-form">
                         <input type="text" placeholder="Ajouter un commentaire..." required>
-                        <button type="submit">Publier</button>
+                        <button type="submit">Envoyer</button>
                     </form>
-                `;
-                feed.appendChild(postElement);
-                
-                // Charger les commentaires pour ce post
-                loadComments(post.id);
-            }
-             
-            // Attacher les écouteurs d'événements
-            attachEventListeners();
+                </div>
+            </div>
+        `).join('');
+    };
+
+    // --- GESTION DES ÉVÉNEMENTS ---
+    postsFeed.addEventListener('click', async (e) => {
+        // Gérer les réactions
+        if (e.target.classList.contains('reaction-btn')) {
+            const reaction = e.target.dataset.reaction;
+            const postId = e.target.closest('.post-card').dataset.postId;
+            
+            // Upsert permet de mettre à jour ou d'insérer si ça n'existe pas
+            const { error } = await supabase.from('reactions').upsert({
+                post_id: postId,
+                user_id: user.id,
+                reaction_type: reaction
+            }, { onConflict: 'post_id, user_id' });
+            
+            if (error) console.error("Erreur d'ajout de réaction:", error);
+            // Idéalement, rafraîchir le compteur de réactions ici
         }
-        
-        // Charger les commentaires pour un post spécifique
-        async function loadComments(postId) {
-            const commentsContainer = document.getElementById(`comments-for-${postId}`);
-            const { data: comments, error } = await supabase
-                .from('comments')
-                .select(`*, user:profiles(username)`)
-                .eq('post_id', postId)
-                .is('parent_comment_id', null) // Ne récupérer que les commentaires parents
-                .order('created_at', { ascending: true });
+    });
+
+    postsFeed.addEventListener('submit', async (e) => {
+        // Gérer les commentaires
+        if (e.target.classList.contains('comment-form')) {
+            e.preventDefault();
+            const input = e.target.querySelector('input');
+            const content = input.value;
+            const postId = e.target.closest('.post-card').dataset.postId;
+
+            const { error } = await supabase.from('comments').insert({
+                post_id: postId,
+                user_id: user.id,
+                content: content
+            });
 
             if (error) {
-                console.error("Erreur de chargement des commentaires:", error);
-                return;
+                console.error("Erreur d'ajout de commentaire:", error);
+            } else {
+                input.value = '';
+                fetchPosts(); // Recharger les posts pour voir le nouveau commentaire
             }
-
-            commentsContainer.innerHTML = '';
-            comments.forEach(comment => {
-                const commentElement = document.createElement('div');
-                commentElement.className = 'comment';
-                commentElement.innerHTML = `
-                    <strong>${comment.user?.username || 'Anonyme'}:</strong>
-                    <p style="margin: 0.2rem 0;">${comment.content}</p>
-                    <a href="#" class="reply-btn" data-comment-id="${comment.id}">Répondre</a>
-                `;
-                commentsContainer.appendChild(commentElement);
-            });
         }
+    });
+    
+    await fetchPosts();
+
+})();
+        </script>
         
-        // Attacher les écouteurs d'événements pour les actions
-        function attachEventListeners() {
-            // Pour les formulaires de commentaire
-            document.querySelectorAll('.comment-form').forEach(form => {
-                form.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const postId = e.target.dataset.postId;
-                    const input = e.target.querySelector('input');
-                    const content = input.value.trim();
-
-                    if (!content) return;
-
-                    const { error } = await supabase.from('comments').insert({
-                        post_id: postId,
-                        user_id: currentUser.id,
-                        content: content
-                    });
-
-                    if (error) {
-                        console.error('Erreur d\'ajout de commentaire:', error);
-                    } else {
-                        input.value = '';
-                        loadComments(postId); // Recharger les commentaires
-                    }
-                });
-            });
-
-            // Pour les réactions
-            document.querySelectorAll('.reaction-btn').forEach(button => {
-                button.addEventListener('click', async (e) => {
-                    const postId = e.target.parentElement.dataset.postId;
-                    const reaction = e.target.textContent;
-                    
-                    // Upsert permet de créer ou de mettre à jour la réaction de l'utilisateur
-                    const { error } = await supabase.from('reactions').upsert({
-                        post_id: postId,
-                        user_id: currentUser.id,
-                        reaction_type: reaction
-                    }, { onConflict: 'post_id, user_id' });
-
-                    if (error) {
-                        console.error("Erreur d'ajout de réaction:", error);
-                    } else {
-                        console.log(`Réaction '${reaction}' ajoutée au post ${postId}`);
-                        // Ici, vous pourriez ajouter un feedback visuel
-                    }
-                });
-            });
-        }
-        
-        // Gestion de la déconnexion
-        document.getElementById('logout-button').addEventListener('click', async () => {
-            await supabase.auth.signOut();
-            sessionStorage.clear();
-            window.location.href = 'auth.html';
-        });
-
-        // Lancer l'application
-        document.addEventListener('DOMContentLoaded', checkAndLoad);
-    </script>
-</body>
-</html>
