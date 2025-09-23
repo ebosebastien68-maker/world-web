@@ -1,145 +1,224 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>World Web- Main</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
-<style>
-  :root{
-    --bg:#f0f2f5; --card:#fff; --accent:#2563eb; --muted:#6b7280;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:Inter,system-ui,Arial,"Noto Sans",sans-serif;background:var(--bg);color:#111}
-  header{
-    position:fixed;top:0;left:0;right:0;height:64px;background:var(--card);
-    box-shadow:0 4px 18px rgba(2,6,23,0.08);display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:2000;
-  }
-  header .brand{display:flex;align-items:center;gap:12px}
-  header h1{font-size:18px;margin:0}
-  header nav{display:flex;gap:8px;align-items:center}
-  header button{background:transparent;border:0;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:15px}
-  header button.active{background:rgba(37,99,235,0.12);color:var(--accent)}
-  #app{padding:84px 16px 32px;max-width:980px;margin:0 auto;min-height:calc(100vh - 100px)}
-  .pageContent{opacity:0;transform:translateY(10px) rotateX(4deg);animation:enter 380ms ease forwards}
-  @keyframes enter{to{opacity:1;transform:none}}
-
-  .card{background:var(--card);border-radius:10px;padding:14px;margin-bottom:14px;box-shadow:0 1px 6px rgba(2,6,23,0.04)}
-  .muted{color:var(--muted);font-size:13px}
-
-  .row{display:flex;gap:8px;align-items:center}
-  input,textarea,select,button{font-family:inherit}
-  .btn{background:var(--accent);color:white;border:0;padding:8px 12px;border-radius:8px;cursor:pointer}
-  .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(37,99,235,0.12)}
-  .hidden{display:none}
-  .media-thumb{max-width:120px;border-radius:8px;display:block;margin-top:8px}
-  .search{display:flex;gap:8px;align-items:center}
-  .search input{padding:8px;border-radius:8px;border:1px solid #e5e7eb;width:260px}
-
-  /* responsive */
-  @media (max-width:640px){
-    header{
-      padding:10px;
-      height:auto; 
-      align-items: center;
-    }
-    header nav {
-      flex-wrap: wrap; 
-      justify-content: flex-end; 
-    }
-    .search input{width:140px}
-
-    /* --- LA SOLUTION EST ICI --- */
-    /* On augmente le padding du haut pour compenser la hauteur du header qui a grandi */
-    #app {
-      padding-top: 130px; 
-    }
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Principale</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        :root {
+            --primary-color: #3b82f6;
+            --secondary-color: #6b7280;
+            --background-color: #f3f4f6;
+            --surface-color: #ffffff;
+            --border-color: #e5e7eb;
+            --text-color: #1f2937;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: var(--surface-color);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem 0;
+        }
+        .sidebar h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            padding: 0 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .nav-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+        }
+        .nav-item a {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem 1.5rem;
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.2s, color 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .nav-item a:hover {
+            background-color: #f9fafb;
+        }
+        .nav-item a.active {
+            color: var(--primary-color);
+            background-color: #eff6ff;
+            border-left-color: var(--primary-color);
+        }
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+            margin-right: 1rem;
+        }
+        .main-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+        #logout-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+        }
+    </style>
 </head>
 <body>
 
-<header>
-  <div class="brand">
-    <img src="https://api.iconify.design/ant-design:notification-filled.svg?color=%232563eb" style="width:28px;height:28px" alt="logo">
-    <h1>FiK</h1>
-    <div class="muted" style="margin-left:6px;font-size:13px">communauté</div>
-  </div>
+    <aside class="sidebar">
+        <h1>Mon App</h1>
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="#" class="nav-link active" data-page="home">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
+                    Home
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-page="messages">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" /></svg>
+                    Messages
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-page="groupes">
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m-7.5-2.962a3.75 3.75 0 1 0-7.5 0 3.75 3.75 0 0 0 7.5 0ZM10.5 12a7.5 7.5 0 1 1 15 0 7.5 7.5 0 0 1-15 0Z" /></svg>
+                    Groupes
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-page="publier">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                    Publier
+                </a>
+            </li>
+             <li class="nav-item">
+                <a href="#" class="nav-link" data-page="notifications">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" /></svg>
+                    Notifications
+                </a>
+            </li>
+        </ul>
+        <div class="nav-item" style="padding: 0 1.5rem;">
+            <a href="#" id="logout-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" /></svg>
+                Déconnexion
+            </a>
+        </div>
+    </aside>
 
-  <nav id="navButtons">
-    <button id="btn-home" onclick="affichePage('home')">🏠 Home</button>
-    <button id="btn-messages" onclick="affichePage('messages')">💬 Messages</button>
-    <button id="btn-notifications" onclick="affichePage('notifications')">🔔 Notifications</button>
-    <button id="btn-groupes" onclick="affichePage('groupes')">👥 Groupes</button>
-    <button id="btn-publier" onclick="affichePage('publier')">✍️ Publier</button>
-    <button class="btn ghost" onclick="location.href='auth.html'">Se déconnecter</button>
-  </nav>
-</header>
+    <main class="main-content" id="main-content-area">
+        </main>
 
-<main id="app">Chargement...</main>
+    <script type="module">
+        const supabaseUrl = 'https://rrcbprbxgonzsqldhfil.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyY2JwcmJ4Z29uenNxbGRoZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MzY1NjUsImV4cCI6MjA3NDExMjU2NX0.-C7VtLJA7ZLByprNBsMKSIKnH7HubPzgpIXyKEGYwrA';
+        const { createClient } = supabase.supabase;
+        const _supabase = createClient(supabaseUrl, supabaseKey);
 
-<script>
-const { createClient } = supabase;
-const SUPA_URL = 'https://rrcbprbxgonzsqldhfil.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyY2JwcmJ4Z29uenNxbGRoZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MzY1NjUsImV4cCI6MjA3NDExMjU2NX0.-C7VtLJA7ZLByprNBsMKSIKnH7HubPzgpIXyKEGYwrA';
-const supabaseClient = createClient(SUPA_URL, SUPA_KEY);
+        const mainContentArea = document.getElementById('main-content-area');
+        const navLinks = document.querySelectorAll('.nav-link');
 
-const PAGE_NAMES = ['home','messages','notifications','groupes','publier'];
-const pages = {};
-async function preloadPages(){
-  for(const name of PAGE_NAMES){
-    try{
-      const res = await fetch(`pages/${name}.html`);
-      if(!res.ok) {
-        pages[name] = `<div class="card">Erreur : page "${name}" introuvable.</div>`;
-        continue;
-      }
-      pages[name] = await res.text();
-    } catch(e){
-      pages[name] = `<div class="card">Erreur fetch ${e.message}</div>`;
-    }
-  }
-  affichePage('home');
-}
-preloadPages();
+        // Fonction pour vérifier la session utilisateur
+        async function checkUserSession() {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (!session) {
+                window.location.href = 'auth.html';
+            }
+        }
 
-function runInlineScripts(container){
-  const scripts = container.querySelectorAll('script');
-  scripts.forEach(s => {
-    try{
-      const code = s.textContent;
-      const fn = new Function(code);
-      fn();
-    }catch(err){
-      console.error('Script error:', err);
-    }
-  });
-}
+        // Fonction pour charger le contenu des pages
+        async function loadPageContent(pageName) {
+            try {
+                const response = await fetch(`./pages/${pageName}.html`);
+                if (!response.ok) throw new Error(`Could not load ${pageName}.html`);
+                const content = await response.text();
+                return { name: pageName, content: content };
+            } catch (error) {
+                console.error(error);
+                return { name: pageName, content: `<p>Erreur de chargement du contenu.</p>` };
+            }
+        }
+        
+        // Fonction pour changer de page
+        function switchPage(pageName) {
+            // Mettre à jour la classe active sur les liens de navigation
+            navLinks.forEach(link => {
+                link.classList.toggle('active', link.dataset.page === pageName);
+            });
+            // Afficher la page correspondante
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.toggle('active', page.id === `page-${pageName}`);
+            });
+        }
+        
+        // Initialisation de l'application
+        async function initializeApp() {
+            await checkUserSession();
+            
+            const pagesToLoad = ['home', 'messages', 'groupes', 'publier', 'notifications'];
+            const pagePromises = pagesToLoad.map(loadPageContent);
+            const loadedPages = await Promise.all(pagePromises);
+            
+            loadedPages.forEach(page => {
+                const pageContainer = document.createElement('div');
+                pageContainer.id = `page-${page.name}`;
+                pageContainer.classList.add('page');
+                pageContainer.innerHTML = page.content;
+                mainContentArea.appendChild(pageContainer);
+            });
+            
+            // Afficher la page d'accueil par défaut
+            switchPage('home');
+        }
 
-function setActiveButton(name){
-  PAGE_NAMES.forEach(n=>{
-    const b = document.getElementById('btn-'+n);
-    if(b) b.classList.toggle('active', n===name);
-  });
-}
-function affichePage(pageName){
-  const app = document.getElementById('app');
-  setActiveButton(pageName);
-  const raw = pages[pageName] || `<div class="card">Page non trouvée</div>`;
-  app.innerHTML = `<div class="pageContent" id="page-${pageName}">${raw}</div>`;
-  requestAnimationFrame(()=> {
-    const container = document.getElementById('page-'+pageName);
-    runInlineScripts(container);
-  });
-}
+        // Gestion des clics sur la navigation
+        document.querySelector('.nav-menu').addEventListener('click', (e) => {
+            const link = e.target.closest('.nav-link');
+            if (link) {
+                e.preventDefault();
+                const pageName = link.dataset.page;
+                switchPage(pageName);
+            }
+        });
 
-async function currentUser(){
-  const { data } = await supabaseClient.auth.getUser();
-  return data?.user || null;
-}
-</script>
+        // Gestion de la déconnexion
+        document.getElementById('logout-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const { error } = await _supabase.auth.signOut();
+            if (error) {
+                console.error('Erreur de déconnexion:', error);
+            } else {
+                window.location.href = 'auth.html';
+            }
+        });
 
+        // Lancer l'application
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
 </body>
 </html>
