@@ -1,100 +1,289 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>World Web- index</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<style>
-  body{display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;background:#f7fafc;font-family:Inter,Arial}
-  .box{width:420px;background:#fff;padding:22px;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,0.08)}
-  h2{margin:0 0 10px}
-  label{display:block;margin-top:10px;font-size:13px;color:#374151}
-  input{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;margin-top:6px}
-  .row{display:flex;gap:8px;margin-top:12px}
-  .btn{background:#2563eb;color:#fff;padding:8px 12px;border-radius:8px;border:0;cursor:pointer}
-  a{color:#2563eb;text-decoration:none;font-size:13px}
-  .muted{font-size:13px;color:#6b7280;margin-top:8px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentification</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        :root {
+            --primary-color: #3b82f6;
+            --secondary-color: #6b7280;
+            --background-color: #f9fafb;
+            --surface-color: #ffffff;
+            --error-color: #ef4444;
+            --success-color: #22c55e;
+            --border-color: #d1d5db;
+            --text-color: #111827;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .auth-container {
+            background-color: var(--surface-color);
+            padding: 2.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+        .auth-view {
+            display: none;
+        }
+        .auth-view.active {
+            display: block;
+        }
+        h2 {
+            text-align: center;
+            font-size: 1.875rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--secondary-color);
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            box-sizing: border-box;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        .btn {
+            width: 100%;
+            padding: 0.875rem;
+            border: none;
+            border-radius: 0.5rem;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #2563eb;
+        }
+        .switch-link {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+        .switch-link a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .switch-link a:hover {
+            text-decoration: underline;
+        }
+        .forgot-password-link {
+            display: block;
+            text-align: right;
+            font-size: 0.875rem;
+            margin-top: -1rem;
+            margin-bottom: 1.5rem;
+        }
+        .message {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .message.error {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        .message.success {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+    </style>
 </head>
 <body>
+    <div class="auth-container">
+        <div id="message-area"></div>
 
-<div class="box">
-  <h2>Connexion / Inscription</h2>
+        <div id="login-view" class="auth-view active">
+            <h2>Connexion</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Mot de passe</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                 <a href="#" id="show-forgot-password" class="forgot-password-link">Mot de passe oublié ?</a>
+                <button type="submit" class="btn">Se connecter</button>
+            </form>
+            <p class="switch-link">Pas de compte ? <a href="#" id="show-signup">Inscrivez-vous</a></p>
+        </div>
 
-  <div id="form-area">
-    <label>Email</label>
-    <input id="email" type="email" placeholder="email@example.com">
-    <label>Mot de passe</label>
-    <input id="password" type="password" placeholder="Mot de passe">
+        <div id="signup-view" class="auth-view">
+            <h2>Inscription</h2>
+            <form id="signup-form">
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">Mot de passe</label>
+                    <input type="password" id="signup-password" required>
+                </div>
+                <button type="submit" class="btn">S'inscrire</button>
+            </form>
+            <p class="switch-link">Déjà un compte ? <a href="#" id="show-login">Connectez-vous</a></p>
+        </div>
+        
+        <div id="forgot-password-view" class="auth-view">
+            <h2>Mot de passe oublié</h2>
+            <p style="text-align: center; color: var(--secondary-color); margin-bottom: 1.5rem;">Entrez votre email pour recevoir un lien de réinitialisation.</p>
+            <form id="forgot-password-form">
+                <div class="form-group">
+                    <label for="forgot-email">Email</label>
+                    <input type="email" id="forgot-email" required>
+                </div>
+                <button type="submit" class="btn">Envoyer le lien</button>
+            </form>
+             <p class="switch-link"><a href="#" id="back-to-login-forgot">Retour à la connexion</a></p>
+        </div>
 
-    <div class="row">
-      <button id="signInBtn" class="btn">Se connecter</button>
-      <button id="signUpBtn" class="btn" style="background:#10b981">S'inscrire</button>
+        <div id="reset-password-view" class="auth-view">
+            <h2>Nouveau mot de passe</h2>
+            <form id="reset-password-form">
+                <div class="form-group">
+                    <label for="new-password">Entrez votre nouveau mot de passe</label>
+                    <input type="password" id="new-password" required>
+                </div>
+                <button type="submit" class="btn">Mettre à jour</button>
+            </form>
+        </div>
     </div>
 
-    <div style="margin-top:8px">
-      <a id="resetLink" href="#">Mot de passe oublié ?</a>
-    </div>
-    <div id="msg" class="muted"></div>
-  </div>
-</div>
+    <script type="module">
+        const supabaseUrl = 'https://rrcbprbxgonzsqldhfil.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyY2JwcmJ4Z29uenNxbGRoZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MzY1NjUsImV4cCI6MjA3NDExMjU2NX0.-C7VtLJA7ZLByprNBsMKSIKnH7HubPzgpIXyKEGYwrA';
+        const { createClient } = supabase.supabase;
+        const _supabase = createClient(supabaseUrl, supabaseKey);
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const SUPA_URL = 'https://rrcbprbxgonzsqldhfil.supabase.co';
-  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyY2JwcmJ4Z29uenNxbGRoZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MzY1NjUsImV4cCI6MjA3NDExMjU2NX0.-C7VtLJA7ZLByprNBsMKSIKnH7HubPzgpIXyKEGYwrA';
-  
-  // --- CORRECTION ICI ---
-  // On utilise l'objet global "supabase" fourni par le script CDN.
-  const { createClient } = supabase; 
-  const supabaseClient = createClient(SUPA_URL, SUPA_KEY);
+        const loginView = document.getElementById('login-view');
+        const signupView = document.getElementById('signup-view');
+        const forgotPasswordView = document.getElementById('forgot-password-view');
+        const resetPasswordView = document.getElementById('reset-password-view');
+        const messageArea = document.getElementById('message-area');
 
-  const msg = document.getElementById('msg');
-  const emailInput = document.getElementById('email');
-  const passwordInput = document.getElementById('password');
+        function switchView(viewToShow) {
+            document.querySelectorAll('.auth-view').forEach(view => view.classList.remove('active'));
+            viewToShow.classList.add('active');
+            messageArea.innerHTML = '';
+        }
 
-  async function signIn(){
-    msg.textContent = 'Connexion en cours...';
-    // On utilise notre client initialisé "supabaseClient"
-    const { error } = await supabaseClient.auth.signInWithPassword({ 
-      email: emailInput.value, 
-      password: passwordInput.value 
-    });
-    if(error) msg.textContent = 'Erreur : ' + error.message;
-    else {
-      msg.textContent = 'Connecté ! Redirection…';
-      setTimeout(()=> location.href = 'main.html', 600);
-    }
-  }
+        document.getElementById('show-signup').addEventListener('click', (e) => {
+            e.preventDefault();
+            switchView(signupView);
+        });
+        document.getElementById('show-login').addEventListener('click', (e) => {
+            e.preventDefault();
+            switchView(loginView);
+        });
+        document.getElementById('show-forgot-password').addEventListener('click', (e) => {
+            e.preventDefault();
+            switchView(forgotPasswordView);
+        });
+        document.getElementById('back-to-login-forgot').addEventListener('click', (e) => {
+            e.preventDefault();
+            switchView(loginView);
+        });
+        
+        function showMessage(type, text) {
+            messageArea.innerHTML = `<div class="message ${type}">${text}</div>`;
+        }
 
-  async function signUp(){
-    msg.textContent = 'Création de compte...';
-    const { data, error } = await supabaseClient.auth.signUp({ 
-      email: emailInput.value, 
-      password: passwordInput.value 
-    });
-    if(error) msg.textContent = 'Erreur : ' + error.message;
-    else {
-      msg.textContent = 'Compte créé. Vérifiez votre email pour confirmer.';
-    }
-  }
+        // Login
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+            if (error) {
+                showMessage('error', `Erreur de connexion : ${error.message}`);
+            } else {
+                window.location.href = 'main.html';
+            }
+        });
 
-  async function sendReset(e){
-    e.preventDefault();
-    const email = emailInput.value;
-    if(!email){ msg.textContent = 'Entrez votre email d\'abord'; return;}
-    msg.textContent = 'Envoi du lien de réinitialisation...';
-    const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, { 
-      redirectTo: location.origin + '/auth.html' 
-    });
-    if(error) msg.textContent = 'Erreur : ' + error.message;
-    else msg.textContent = 'Lien envoyé. Vérifie ta boîte mail.';
-  }
+        // Signup
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const { data, error } = await _supabase.auth.signUp({ email, password });
+            if (error) {
+                showMessage('error', `Erreur d'inscription : ${error.message}`);
+            } else {
+                showMessage('success', 'Inscription réussie ! Veuillez vérifier votre email pour confirmer votre compte.');
+            }
+        });
+        
+        // Forgot Password
+        document.getElementById('forgot-password-form').addEventListener('submit', async(e) => {
+            e.preventDefault();
+            const email = document.getElementById('forgot-email').value;
+            const { data, error } = await _supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + window.location.pathname,
+            });
+            if (error) {
+                showMessage('error', error.message);
+            } else {
+                showMessage('success', 'Un lien de réinitialisation a été envoyé à votre adresse e-mail.');
+            }
+        });
+        
+        // Reset Password
+        document.getElementById('reset-password-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('new-password').value;
+            const { data, error } = await _supabase.auth.updateUser({ password });
 
-  document.getElementById('signInBtn').addEventListener('click', signIn);
-  document.getElementById('signUpBtn').addEventListener('click', signUp);
-  document.getElementById('resetLink').addEventListener('click', sendReset);
-});
-</script>
+            if (error) {
+                showMessage('error', `Erreur: ${error.message}`);
+            } else {
+                showMessage('success', 'Votre mot de passe a été mis à jour avec succès.');
+                setTimeout(() => switchView(loginView), 3000);
+            }
+        });
+        
+        // Check for password recovery link on page load
+        _supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'PASSWORD_RECOVERY') {
+                switchView(resetPasswordView);
+            }
+        });
+
+    </script>
 </body>
 </html>
