@@ -24,7 +24,8 @@
   list.innerHTML = '<div class="muted">Chargement des groupes...</div>';
 
   async function load(){
-    const { data, error } = await supabase.from('groups').select('id,name,created_by,created_at').order('created_at',{ascending:false});
+    // --- CORRECTION ICI ---
+    const { data, error } = await supabaseClient.from('groups').select('id,name,created_by,created_at').order('created_at',{ascending:false});
     if(error) { list.innerHTML = '<div class="card">Erreur</div>'; console.error(error); return; }
     if(!data || data.length===0) { list.innerHTML = '<div class="muted">Aucun groupe. Le groupe Général contient tous les utilisateurs par défaut.</div>'; return; }
     list.innerHTML = data.map(g => `<div class="card g"><strong>${escapeHtml(g.name)}</strong><div class="muted">créé par ${escapeHtml(g.created_by || 'admin')} • ${new Date(g.created_at).toLocaleString()}</div><div style="margin-top:8px"><button class="btn ghost" onclick="openGroup('${g.id}')">Ouvrir</button> <button class="btn" onclick="addMember('${g.id}')">Ajouter membre</button></div></div>`).join('');
@@ -34,10 +35,12 @@
   window.createGroup = async function(){
     const n = document.getElementById('g-name').value.trim();
     if(!n) return alert('Donne un nom');
-    const user = (await supabase.auth.getUser()).data?.user;
+    // --- CORRECTION ICI ---
+    const user = (await supabaseClient.auth.getUser()).data?.user;
     if(!user) return alert('Connecte-toi');
     try{
-      await supabase.from('groups').insert({ name: n, created_by: user.id });
+      // --- CORRECTION ICI ---
+      await supabaseClient.from('groups').insert({ name: n, created_by: user.id });
       document.getElementById('g-name').value='';
       load();
       alert('Groupe créé');
@@ -48,7 +51,8 @@
     const mem = prompt('ID ou email du membre à ajouter');
     if(!mem) return;
     try{
-      await supabase.from('group_members').insert({ group_id: groupId, user_id: mem });
+      // --- CORRECTION ICI ---
+      await supabaseClient.from('group_members').insert({ group_id: groupId, user_id: mem });
       alert('Membre ajouté');
     }catch(e){ console.error(e); alert('Erreur ajout'); }
   };
@@ -59,4 +63,4 @@
 
   function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 })();
-    </script>
+</script>
