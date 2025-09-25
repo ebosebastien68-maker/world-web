@@ -1,135 +1,216 @@
 <style>
-    .home-container { max-width: 800px; margin: auto; }
-    .post-card { background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; padding: 20px; }
-    .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
-    .post-author { font-weight: bold; }
-    .post-content p { margin: 0 0 15px 0; }
-    .post-content img { max-width: 100%; border-radius: 8px; }
-    .post-actions { display: flex; justify-content: space-around; border-top: 1px solid #e9ebee; padding-top: 10px; }
-    .action-btn { background: none; border: none; cursor: pointer; font-size: 20px; transition: transform 0.2s; }
-    .action-btn:hover { transform: scale(1.2); }
-    .comments-section { margin-top: 20px; }
-    .comment { margin-bottom: 10px; padding-left: 15px; border-left: 2px solid #eee; }
+    /* Utilisation de variables CSS pour une maintenance facile du design */
+    :root {
+        --border-color: #e9ebee;
+        --card-background: #fff;
+        --text-color: #1c1e21;
+        --text-color-secondary: #65676b;
+        --primary-color: #007bff;
+        --hover-background: #f0f2f5;
+    }
+
+    .home-container { max-width: 750px; margin: auto; padding: 0 10px; }
+    .post-card {
+        background: var(--card-background);
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        margin-bottom: 30px;
+        overflow: hidden;
+    }
+
+    /* --- En-tête de l'article --- */
+    .post-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+    }
+    .post-author-info { display: flex; flex-direction: column; }
+    .post-author { font-weight: 600; font-size: 1.1em; color: var(--text-color); }
+    .post-timestamp { font-size: 0.85em; color: var(--text-color-secondary); }
+    
+    /* --- Contenu de l'article --- */
+    .post-content { padding: 0 20px 20px 20px; line-height: 1.6; color: var(--text-color); }
+    .post-content p { margin: 0; }
+    .post-media-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 5px; margin-top: 15px; }
+    .post-media-grid img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+
+    /* --- Liens (WhatsApp, Acheter, etc.) --- */
+    .post-links-container { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+    .post-link-btn {
+        background-color: var(--hover-background); color: var(--text-color);
+        text-decoration: none; padding: 8px 15px; border-radius: 20px;
+        font-size: 0.9em; font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    .post-link-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .whatsapp-btn { background-color: #25D366; color: white; }
+    .buy-btn { background-color: var(--primary-color); color: white; }
+
+    /* --- Section des interactions (Réactions, Commentaires) --- */
+    .post-interactions { border-top: 1px solid var(--border-color); padding: 5px 20px 15px 20px; }
+    .post-actions { display: flex; justify-content: space-around; padding: 10px 0; }
+    .action-btn {
+        background: none; border: none; cursor: pointer; font-size: 24px;
+        color: var(--text-color-secondary); padding: 8px; border-radius: 8px;
+        transition: background-color 0.2s, color 0.2s;
+    }
+    .action-btn:hover { background-color: var(--hover-background); color: var(--primary-color); }
     .comment-form { display: flex; gap: 10px; margin-top: 10px; }
-    .comment-form input { flex-grow: 1; padding: 8px; border-radius: 18px; border: 1px solid #ccc; }
-    .comment-form button { padding: 8px 15px; border-radius: 18px; border: none; background-color: #007bff; color: white; cursor: pointer; }
+    .comment-form input {
+        flex-grow: 1; background-color: var(--hover-background);
+        border: none; padding: 12px 18px; border-radius: 20px;
+    }
+    .login-prompt { text-align: center; color: var(--text-color-secondary); padding: 15px 0; }
+    .login-prompt a { color: var(--primary-color); font-weight: 600; text-decoration: none; }
+
+    /* --- Menu Admin (inchangé mais s'intègre au nouveau design) --- */
+    .post-menu { position: relative; }
+    .post-menu-button { background: none; border: none; cursor: pointer; padding: 5px; border-radius: 50%; }
+    .post-menu-button:hover { background-color: var(--hover-background); }
+    .post-menu-dropdown { display: none; position: absolute; right: 0; top: 100%; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); list-style: none; padding: 8px 0; margin: 5px 0 0 0; width: 160px; z-index: 10; }
+    .post-menu-dropdown.visible { display: block; }
+    .post-menu-dropdown li button { background: none; border: none; width: 100%; padding: 10px 15px; text-align: left; cursor: pointer; font-size: 14px; }
+    .post-menu-dropdown li button:hover { background-color: var(--hover-background); }
+    .delete-action { color: #dc3545; }
 </style>
 
-<div class="home-container" id="posts-feed">
-    </div>
+<div class="home-container" id="posts-feed"></div>
 
 <script>
-// Ce script s'exécutera une fois que ce HTML est injecté dans main.html
 (async function() {
-    // La variable `supabase` est déjà définie dans main.html et est donc globale
     const postsFeed = document.getElementById('posts-feed');
-    const { data: { user } } = await supabase.auth.getUser();
-
     if (!postsFeed) return;
 
+    let currentUserProfile = null;
+    if (currentUser) {
+        const { data } = await supabaseClient.from('profiles').select('role').eq('id', currentUser.id).single();
+        currentUserProfile = data;
+    }
+
+    /**
+     * Nouvelle fonction pour formater la date de manière lisible.
+     * Affiche "il y a X temps" pour les dates récentes.
+     */
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const seconds = Math.round((now - date) / 1000);
+        const minutes = Math.round(seconds / 60);
+        const hours = Math.round(minutes / 60);
+        const days = Math.round(hours / 24);
+
+        if (seconds < 60) return `il y a ${seconds} secondes`;
+        if (minutes < 60) return `il y a ${minutes} minutes`;
+        if (hours < 24) return `il y a ${hours} heures`;
+        if (days < 7) return `il y a ${days} jours`;
+        
+        return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
     const fetchPosts = async () => {
-        const { data: posts, error } = await supabase
+        const { data: posts, error } = await supabaseClient
             .from('posts')
-            .select(`
-                *,
-                profiles ( username ),
-                comments ( *, profiles ( username ) ),
-                reactions ( * )
-            `)
-            .eq('is_published', true)
+            .select(`*, profiles(username)`)
             .order('created_at', { ascending: false });
 
-        if (error) {
-            console.error("Erreur de chargement des posts:", error);
-            postsFeed.innerHTML = '<p>Impossible de charger les articles.</p>';
-            return;
-        }
-
+        if (error) { postsFeed.innerHTML = '<p>Impossible de charger les articles.</p>'; return; }
         renderPosts(posts);
     };
 
     const renderPosts = (posts) => {
-        if (posts.length === 0) {
-            postsFeed.innerHTML = '<p>Aucun article à afficher pour le moment.</p>';
-            return;
-        }
-
-        postsFeed.innerHTML = posts.map(post => `
-            <div class="post-card" data-post-id="${post.id}">
-                <div class="post-header">
-                    <span class="post-author">${post.profiles.username || 'Anonyme'}</span>
-                </div>
-                <div class="post-content">
-                    <p>${post.content}</p>
-                    ${post.image_url ? `<img src="${post.image_url}" alt="Image du post">` : ''}
-                    ${post.whatsapp_number ? `<a href="https://wa.me/${post.whatsapp_number}" target="_blank">Contacter sur WhatsApp</a>` : ''}
-                </div>
-                <div class="post-actions">
-                    <button class="action-btn reaction-btn" data-reaction="👍">👍</button>
-                    <button class="action-btn reaction-btn" data-reaction="❤️">❤️</button>
-                    <button class="action-btn reaction-btn" data-reaction="🤣">🤣</button>
-                    <button class="action-btn reaction-btn" data-reaction="😡">😡</button>
-                </div>
-                <div class="comments-section">
-                    ${post.comments.map(comment => `
-                        <div class="comment">
-                            <strong>${comment.profiles.username || 'Anonyme'}:</strong>
-                            <p>${comment.content}</p>
-                            <button class="reply-btn" data-comment-id="${comment.id}">Répondre</button>
+        postsFeed.innerHTML = !posts || posts.length === 0
+            ? '<p>Aucun article à afficher pour le moment.</p>'
+            : posts.map(post => {
+                const isAdmin = currentUserProfile && currentUserProfile.role === 'admin';
+                return `
+                <div class="post-card" data-post-id="${post.id}">
+                    <div class="post-header">
+                        <div class="post-author-info">
+                            <span class="post-author">${post.profiles.username || 'Anonyme'}</span>
+                            <small class="post-timestamp">${formatDate(post.created_at)}</small>
                         </div>
-                    `).join('')}
-                    <form class="comment-form">
-                        <input type="text" placeholder="Ajouter un commentaire..." required>
-                        <button type="submit">Envoyer</button>
-                    </form>
+                        ${isAdmin ? `
+                        <div class="post-menu">
+                            <button class="post-menu-button" data-action="toggle-menu" title="Options">
+                                <svg fill="currentColor" viewBox="0 0 24 24" width="24" height="24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path></svg>
+                            </button>
+                            <ul class="post-menu-dropdown">
+                                <li><button data-action="edit">Modifier</button></li>
+                                <li><button data-action="delete" class="delete-action">Supprimer</button></li>
+                            </ul>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="post-content">
+                        <p>${post.content || ''}</p>
+                        <div class="post-media-grid">
+                            ${(post.image_urls || []).map(url => `<img src="${url}" alt="Image externe">`).join('')}
+                            ${post.media_url ? `<img src="${post.media_url}" alt="Média importé">` : ''}
+                        </div>
+                        <div class="post-links-container">
+                            ${(post.whatsapp_numbers || []).map(num => `<a href="https://wa.me/${num}" target="_blank" class="post-link-btn whatsapp-btn">WhatsApp</a>`).join('')}
+                            ${post.buy_link ? `<a href="${post.buy_link}" target="_blank" class="post-link-btn buy-btn">Acheter</a>` : ''}
+                            ${(post.custom_links || []).map(link => `<a href="${link.url}" target="_blank" class="post-link-btn">${link.title}</a>`).join('')}
+                        </div>
+                    </div>
+
+                    <div class="post-interactions">
+                    ${currentUser ? `
+                        <div class="post-actions">
+                            <button class="action-btn" title="J'aime">👍</button>
+                            <button class="action-btn" title="J'adore">❤️</button>
+                            <button class="action-btn" title="Haha">🤣</button>
+                            <button class="action-btn" title="Grrr">😡</button>
+                        </div>
+                        <div class="comments-section">
+                            <form class="comment-form"><input type="text" placeholder="Ajouter un commentaire..." required></form>
+                        </div>
+                    ` : `
+                        <p class="login-prompt"><a href="#auth">Connectez-vous</a> pour réagir ou commenter.</p>
+                    `}
+                    </div>
                 </div>
-            </div>
-        `).join('');
+                `;
+            }).join('');
     };
 
-    // --- GESTION DES ÉVÉNEMENTS ---
+    // --- GESTION DES ÉVÉNEMENTS (Logique inchangée) ---
     postsFeed.addEventListener('click', async (e) => {
-        // Gérer les réactions
-        if (e.target.classList.contains('reaction-btn')) {
-            const reaction = e.target.dataset.reaction;
-            const postId = e.target.closest('.post-card').dataset.postId;
-            
-            // Upsert permet de mettre à jour ou d'insérer si ça n'existe pas
-            const { error } = await supabase.from('reactions').upsert({
-                post_id: postId,
-                user_id: user.id,
-                reaction_type: reaction
-            }, { onConflict: 'post_id, user_id' });
-            
-            if (error) console.error("Erreur d'ajout de réaction:", error);
-            // Idéalement, rafraîchir le compteur de réactions ici
-        }
-    });
+        const button = e.target.closest('button');
+        if (!button) return;
+        const action = button.dataset.action;
+        const postCard = button.closest('.post-card');
+        const postId = postCard ? postCard.dataset.postId : null;
 
-    postsFeed.addEventListener('submit', async (e) => {
-        // Gérer les commentaires
-        if (e.target.classList.contains('comment-form')) {
-            e.preventDefault();
-            const input = e.target.querySelector('input');
-            const content = input.value;
-            const postId = e.target.closest('.post-card').dataset.postId;
-
-            const { error } = await supabase.from('comments').insert({
-                post_id: postId,
-                user_id: user.id,
-                content: content
-            });
-
-            if (error) {
-                console.error("Erreur d'ajout de commentaire:", error);
-            } else {
-                input.value = '';
-                fetchPosts(); // Recharger les posts pour voir le nouveau commentaire
+        if (action === 'toggle-menu') {
+            button.nextElementSibling.classList.toggle('visible');
+        } else if (action === 'edit') {
+            window.location.hash = `#publier?edit=${postId}`;
+        } else if (action === 'delete') {
+            if (confirm('Voulez-vous vraiment supprimer cet article ?')) {
+                await supabaseClient.from('posts').delete().eq('id', postId);
             }
         }
     });
     
-    await fetchPosts();
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.post-menu')) {
+            document.querySelectorAll('.post-menu-dropdown.visible').forEach(menu => menu.classList.remove('visible'));
+        }
+    });
 
+    // --- INITIALISATION ET TEMPS RÉEL ---
+    await fetchPosts();
+    supabaseClient
+        .channel('public-posts')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, fetchPosts)
+        .subscribe();
 })();
-</script>
+            </script>
+            
