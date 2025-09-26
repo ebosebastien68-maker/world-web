@@ -1,46 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - World Web</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* ... (tous les styles modernes restent identiques) ... */
-        :root { --font-family: 'Inter', sans-serif; --transition-speed: 0.2s; --bg-main: #f0f2f5; --bg-sidebar: #ffffff; --bg-content: #ffffff; --text-primary: #1c1e21; --text-secondary: #65676b; --border-color: #e0e0e0; --accent-color: #0d6efd; --shadow-color: rgba(0, 0, 0, 0.05); }
-        body.dark-theme { --bg-main: #18191a; --bg-sidebar: #242526; --bg-content: #242526; --text-primary: #e4e6eb; --text-secondary: #b0b3b8; --border-color: #3a3b3c; --accent-color: #4dabf7; --shadow-color: rgba(0, 0, 0, 0.2); }
-        * { box-sizing: border-box; }
-        body { font-family: var(--font-family); margin: 0; background-color: var(--bg-main); color: var(--text-primary); display: grid; grid-template-columns: 240px 1fr; height: 100vh; overflow: hidden; transition: background-color var(--transition-speed), color var(--transition-speed); }
-        .sidebar { background-color: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 15px; transition: background-color var(--transition-speed), border-color var(--transition-speed); }
-        .sidebar-header { font-size: 1.5em; font-weight: 700; padding: 0 10px 20px 10px; color: var(--accent-color); }
-        .nav-links { display: flex; flex-direction: column; gap: 8px; }
-        .nav-links a { display: flex; align-items: center; gap: 12px; padding: 12px 10px; border-radius: 8px; text-decoration: none; color: var(--text-secondary); font-weight: 500; transition: background-color var(--transition-speed), color var(--transition-speed); }
-        .nav-links a:hover { background-color: var(--bg-main); color: var(--text-primary); }
-        .nav-links a.active { background-color: var(--accent-color); color: white; }
-        .nav-links svg { width: 22px; height: 22px; flex-shrink: 0; }
-        .main-content-wrapper { display: flex; flex-direction: column; overflow: hidden; }
-        .main-header { padding: 15px 25px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
-        #app-content { flex-grow: 1; overflow-y: auto; padding: 0 25px 25px 25px; }
-        .preloaded-page { display: none; animation: fadeIn 0.4s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .theme-toggle { background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 8px; border-radius: 50%; }
-        .theme-toggle:hover { background-color: var(--bg-main); color: var(--text-primary); }
-        .loader { text-align: center; padding: 50px; font-size: 1.5em; color: var(--text-secondary); }
-    </style>
-</head>
 <body>
-    <aside class="sidebar">
-        </aside>
-
-    <div class="main-content-wrapper">
-        <main id="app-content">
-            <div class="loader">Vérification des droits...</div>
-        </main>
-    </div>
-
     <script>
         const SUPABASE_URL = 'https://rrcbprbxgonzsqldhfil.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyY2JwcmJ4Z29uenNxbGRoZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MzY1NjUsImV4cCI6MjA3NDExMjU2NX0.-C7VtLJA7ZLByprNBsMKSIKnH7HubPzgpIXyKEGYwrA';
@@ -52,40 +12,50 @@
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.body.classList.toggle('dark-theme', savedTheme === 'dark');
 
-            // --- NOUVELLE LOGIQUE DE SÉCURITÉ (TEST FINAL) ---
+            // --- LOGIQUE DE SÉCURITÉ AVEC DÉBOGAGE ---
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) { 
                 window.location.href = 'auth.html'; 
                 return; 
             }
 
-            // Au lieu d'appeler la fonction, on lit directement la table
+            // ==========================================================
+            // DÉBUT DU BLOC DE DÉBOGAGE
+            // ==========================================================
+            
+            // Alerte 1 : Confirmer l'UID de la session
+            alert(`--- DÉBOGAGE 1/2 ---\nL'UID de la session est :\n${session.user.id}`);
+
+            // On lit directement la table
             const { data: profile, error } = await supabaseClient
                 .from('profiles')
                 .select('role')
                 .eq('id', session.user.id)
                 .single();
 
+            // Alerte 2 : Montrer le résultat de la recherche de profil
+            alert(`--- DÉBOGAGE 2/2 ---\nRésultat de la recherche de profil :\n\nProfil trouvé : ${JSON.stringify(profile)}\n\nErreur reçue : ${JSON.stringify(error)}`);
+            
+            // ==========================================================
+            // FIN DU BLOC DE DÉBOGAGE
+            // ==========================================================
+
+
             if (error || !profile || profile.role !== 'admin') {
-                alert("Accès refusé. Vous devez être administrateur.");
+                alert("Accès refusé (après vérification)."); // Alerte finale pour confirmer le rejet
                 await supabaseClient.auth.signOut();
                 window.location.href = 'auth.html';
                 return;
             }
             
-            // Si la sécurité est validée, on lance l'app
             currentUser = session.user;
             await initializeApp();
         });
 
         // --- Le reste du script reste identique ---
         const appContent = document.getElementById('app-content');
-        const navLinks = document.querySelectorAll('.nav-link');
-        const pageTitle = document.getElementById('page-title');
-        const pagesToPreload = ['home', 'publier', 'menu'];
-        // ... (fonctions showPage, handleRouteChange, preloadAllPages, initializeApp, themeToggle)
+        // ... (toutes les autres fonctions : showPage, handleRouteChange, etc.)
 
     </script>
 </body>
-        </html>
-    
+</html>
