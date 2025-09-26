@@ -757,12 +757,394 @@ main{display:flex;gap:20px;margin-top:18px}
           // ancienne fonction supprimée — ne pas utiliser pour la sécurité.
           // Retourne false côté client par défaut (ne protège rien).
           return false;
-        }
-      }
+        }<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Dashboard - World Web</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    })();
-  </script></body>
-</html> document.body.classList.toggle('dark-theme');
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* variables & base */
+        :root {
+            --font-family: 'Inter', sans-serif;
+            --transition-speed: 0.2s;
+            --bg-main: #f0f2f5;
+            --bg-sidebar: #ffffff;
+            --bg-content: #ffffff;
+            --bg-header: #ffffff;
+            --text-primary: #1c1e21;
+            --text-secondary: #65676b;
+            --border-color: #e0e0e0;
+            --accent-color: #0d6efd;
+            --shadow-color: rgba(0,0,0,0.08);
+            --header-height: 64px;
+        }
+        body.dark-theme {
+            --bg-main: #18191a;
+            --bg-sidebar: #242526;
+            --bg-content: #242526;
+            --bg-header: #242526;
+            --text-primary: #e4e6eb;
+            --text-secondary: #b0b3b8;
+            --border-color: #3a3b3c;
+            --accent-color: #4dabf7;
+            --shadow-color: rgba(0,0,0,0.25);
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color var(--transition-speed), color var(--transition-speed);
+        }
+
+        /* sidebar (inchangé) */
+        .sidebar {
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 15px;
+            transition: background-color var(--transition-speed), border-color var(--transition-speed);
+        }
+        .sidebar-header { font-size: 1.5em; font-weight: 700; padding: 0 10px 20px 10px; color: var(--accent-color); }
+        .nav-links { display:flex; flex-direction:column; gap:8px; }
+        .nav-links a { display:flex; align-items:center; gap:12px; padding:12px 10px; border-radius:8px; text-decoration:none; color:var(--text-secondary); font-weight:500; transition:background-color var(--transition-speed), color var(--transition-speed); }
+        .nav-links a:hover { background-color: var(--bg-main); color: var(--text-primary); }
+        .nav-links a.active { background-color: var(--accent-color); color: white; }
+
+        /* zone principale */
+        .main-content-wrapper { display:flex; flex-direction:column; overflow:hidden; position:relative; }
+
+        /* ---------- BARRE HORIZONTALE (HEADER transformé) ---------- */
+        /* Barre fixée en haut, imitation Facebook, légère ombre */
+        .horizontal-header {
+            position: fixed;
+            top: 0;
+            /* commence après la sidebar largeur 240px sur grand écran */
+            left: 240px;
+            right: 0;
+            height: var(--header-height);
+            background: var(--bg-header);
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            padding: 0 18px;
+            box-shadow: 0 2px 6px var(--shadow-color);
+            z-index: 1200;
+            border-bottom: 1px solid rgba(0,0,0,0.03);
+        }
+        /* responsive: sur petits écrans la sidebar sera probablement masquée -> header pleine largeur */
+        @media (max-width: 880px){
+            body { grid-template-columns: 1fr; }
+            .horizontal-header { left: 0; }
+            .sidebar { display: none; }
+        }
+
+        /* header internal layout */
+        .header-left, .header-center, .header-right { display:flex; align-items:center; gap:12px; }
+        .logo {
+            font-weight:800; color:var(--accent-color); font-size:1.05rem; letter-spacing:0.2px;
+            display:flex; align-items:center; gap:8px;
+        }
+        .search-box {
+            min-width: 320px;
+            max-width: 600px;
+            width: 45%;
+            display:flex;
+            align-items:center;
+            background: var(--bg-main);
+            border-radius: 999px;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            transition: box-shadow var(--transition-speed), transform var(--transition-speed);
+        }
+        .search-box input {
+            border: none; outline: none; background: transparent; width:100%; font-size:0.95rem; color:var(--text-primary);
+        }
+        .header-icon {
+            width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer;
+            transition:background var(--transition-speed);
+        }
+        .header-icon:hover { background: rgba(0,0,0,0.05); }
+
+        /* espace de contenu scrollable (le fil d'actualité) */
+        #app-content {
+            flex-grow:1;
+            overflow-y: auto;
+            padding: calc(var(--header-height) + 16px) 25px 25px 25px; /* top padding pour laisser place au header fixe */
+            height: 100vh;
+            background: transparent;
+        }
+
+        /* cards du fil */
+        .feed { display:flex; flex-direction:column; gap:16px; max-width:820px; margin:0 auto; }
+        .post-card {
+            background: var(--bg-content);
+            border-radius: 10px;
+            padding: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+        .post-header { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+        .avatar { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#ddd,#bbb); display:inline-block; }
+        .post-author { font-weight:600; font-size:0.95rem; }
+        .post-time { font-size:0.8rem; color:var(--text-secondary); margin-left:6px; }
+        .post-body { font-size:0.98rem; color:var(--text-primary); line-height:1.4; }
+        .loader { text-align:center; padding: 30px; font-size: 1.1em; color: var(--text-secondary); }
+
+        /* bouton thème */
+        .theme-toggle { background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 8px; border-radius: 50%; }
+        .theme-toggle:hover { background-color: var(--bg-main); color: var(--text-primary); }
+    </style>
+</head>
+<body>
+    <!-- Sidebar (inchangé visuellement) -->
+    <aside class="sidebar">
+        <div class="sidebar-header">World Web</div>
+        <nav class="nav-links">
+            <a class="nav-link active" href="#">Accueil</a>
+            <a class="nav-link" href="#">Publier</a>
+            <a class="nav-link" href="#">Menu</a>
+        </nav>
+    </aside>
+
+    <div class="main-content-wrapper">
+        <!-- HEADER HORIZONTAL fixé en haut (transformé depuis .main-header) -->
+        <header class="horizontal-header" role="banner">
+            <div class="header-left">
+                <div class="logo">WW</div>
+                <div style="font-weight:600; color:var(--text-secondary); font-size:0.95rem;">Fil d'actualité</div>
+            </div>
+
+            <div class="header-center">
+                <div class="search-box" aria-hidden="false">
+                    <svg style="width:16px;height:16px;opacity:0.6" viewBox="0 0 24 24"><path fill="currentColor" d="M9.5 3A6.5 6.5 0 1 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0-1A7.5 7.5 0 1 0 17 9.5 7.5 7.5 0 0 0 9.5 2z"/><path fill="currentColor" d="M20.71 20.29 15.41 15a8 8 0 1 0-1.41 1.41l5.29 5.29z"/></svg>
+                    <input id="search-input" placeholder="Rechercher sur World Web" />
+                </div>
+            </div>
+
+            <div class="header-right">
+                <div class="header-icon" id="btn-notifs" title="Notifications">🔔</div>
+                <div class="header-icon" id="btn-messages" title="Messages">✉️</div>
+                <button class="theme-toggle" id="theme-toggle" title="Basculer thème">🌓</button>
+                <div class="header-icon" id="btn-profile" title="Profil">👤</div>
+            </div>
+        </header>
+
+        <!-- Zone de contenu scrollable (le fil) -->
+        <main id="app-content" role="main">
+            <div id="feed" class="feed">
+                <div class="loader" id="initial-loader">Chargement...</div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- Supabase init (inchangé) ---
+        const SUPABASE_URL = 'https://rrcbprbxgonzsqldhfil.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyY2JwcmJ4Z29uenNxbGRoZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MzY1NjUsImV4cCI6MjA3NDExMjU2NX0.-C7VtLJA7ZLByprNBsMKSIKnH7HubPzgpIXyKEGYwrA';
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // variables pour pagination infinite scroll
+        let postsOffset = 0;
+        const POSTS_LIMIT = 8;
+        let loadingPosts = false;
+        let allLoaded = false;
+
+        const feedEl = document.getElementById('feed');
+        const appContent = document.getElementById('app-content');
+        const initialLoader = document.getElementById('initial-loader');
+
+        // util: formater date relative simple
+        function timeAgo(dateString){
+            try{
+                const d = new Date(dateString);
+                const s = Math.floor((Date.now() - d.getTime())/1000);
+                if (s < 60) return s + 's';
+                if (s < 3600) return Math.floor(s/60) + 'm';
+                if (s < 86400) return Math.floor(s/3600) + 'h';
+                return Math.floor(s/86400) + 'j';
+            }catch(e){ return ''; }
+        }
+
+        // génère un post-card DOM
+        function renderPost(post){
+            const card = document.createElement('article');
+            card.className = 'post-card';
+            card.innerHTML = `
+                <div class="post-header">
+                    <div class="avatar" aria-hidden="true"></div>
+                    <div>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <div class="post-author">${post.author || 'Utilisateur'}</div>
+                            <div class="post-time">${post.created_at ? timeAgo(post.created_at) : ''}</div>
+                        </div>
+                        <div style="font-size:0.8rem; color:var(--text-secondary)">${post.location || ''}</div>
+                    </div>
+                </div>
+                <div class="post-body">${escapeHtml(post.content || '')}</div>
+            `;
+            return card;
+        }
+
+        // protection simple contre injection dans les cards
+        function escapeHtml(str){
+            return (str || '').replace(/[&<>"'`]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;', '`':'&#96;'})[s]);
+        }
+
+        // tenter de charger posts depuis Supabase (table 'posts' attendue)
+        async function fetchPostsFromSupabase(limit=POSTS_LIMIT, offset=postsOffset){
+            try{
+                // suppose champs: id, author, content, created_at, location
+                const { data, error } = await supabaseClient
+                    .from('posts')
+                    .select('id, author, content, created_at, location')
+                    .order('created_at', { ascending: false })
+                    .range(offset, offset + limit - 1);
+
+                if (error) throw error;
+                return data || [];
+            }catch(err){
+                console.warn('Erreur Supabase posts:', err.message || err);
+                throw err;
+            }
+        }
+
+        // fallback: simuler posts si supabase indisponible
+        function generateDummyPosts(count){
+            const arr = [];
+            for(let i=0;i<count;i++){
+                const idx = postsOffset + i + 1;
+                arr.push({
+                    id: 'demo-' + idx,
+                    author: 'Demo User ' + idx,
+                    content: `Ceci est un post de démonstration N°${idx}. Swipe pour plus...`,
+                    created_at: new Date(Date.now() - idx * 600000).toISOString(),
+                    location: idx % 3 === 0 ? 'Cotonou' : ''
+                });
+            }
+            return arr;
+        }
+
+        async function loadMorePosts(){
+            if (loadingPosts || allLoaded) return;
+            loadingPosts = true;
+
+            // show loader
+            let loader = document.createElement('div');
+            loader.className = 'loader';
+            loader.textContent = 'Chargement...';
+            feedEl.appendChild(loader);
+
+            try{
+                let posts;
+                try{
+                    posts = await fetchPostsFromSupabase(POSTS_LIMIT, postsOffset);
+                }catch(e){
+                    // si erreur, utiliser données dummy mais on considère que dans ce mode on peut encore charger plusieurs fois
+                    posts = generateDummyPosts(POSTS_LIMIT);
+                }
+
+                // si aucun post retourné => tout chargé
+                if (!posts || posts.length === 0){
+                    allLoaded = true;
+                    loader.textContent = 'Plus de posts';
+                    setTimeout(()=> loader.remove(), 1200);
+                    loadingPosts = false;
+                    return;
+                }
+
+                // rendre posts
+                posts.forEach(p => {
+                    const card = renderPost(p);
+                    feedEl.appendChild(card);
+                });
+
+                postsOffset += posts.length;
+                loader.remove();
+            }catch(err){
+                console.error('Erreur loadMorePosts', err);
+                loader.textContent = 'Erreur de chargement';
+                setTimeout(()=> loader.remove(), 1200);
+            }finally{
+                loadingPosts = false;
+                if (initialLoader) {
+                    initialLoader.remove();
+                }
+            }
+        }
+
+        // init app (après vérification session supprimée la vérification admin)
+        async function initializeApp(){
+            // Preload 2 pages of posts
+            await loadMorePosts();
+            // attach scroll listener pour infinite scroll
+            appContent.addEventListener('scroll', () => {
+                const threshold = 420; // px avant le bas
+                const remaining = appContent.scrollHeight - (appContent.scrollTop + appContent.clientHeight);
+                if (remaining < threshold) {
+                    loadMorePosts();
+                }
+            });
+
+            // theme toggle
+            const themeToggle = document.getElementById('theme-toggle');
+            themeToggle.addEventListener('click', () => {
+                const isDark = document.body.classList.toggle('dark-theme');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            });
+
+            // recherche simple (filtrage local sur contenu affiché)
+            const searchInput = document.getElementById('search-input');
+            searchInput.addEventListener('input', (e) => {
+                const q = e.target.value.trim().toLowerCase();
+                const cards = document.querySelectorAll('.post-card');
+                cards.forEach(card => {
+                    const txt = card.querySelector('.post-body').textContent.toLowerCase();
+                    card.style.display = txt.includes(q) ? '' : 'none';
+                });
+            });
+        }
+
+        // --- gestion session: garder la redirection si pas connecté, mais SUPPRIMER la vérification "admin" ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.classList.toggle('dark-theme', savedTheme === 'dark');
+
+            // vérifier présence de session; si non -> redirige vers auth.html
+            try{
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) {
+                    // pas connecté -> page d'auth
+                    window.location.href = 'auth.html';
+                    return;
+                }
+                // IMPORTANT: **la vérification du rôle admin a été retirée** comme demandé.
+                // on garde l'utilisateur courant pour usage éventuel
+                window.currentUser = session.user;
+                await initializeApp();
+            }catch(err){
+                console.error('Erreur auth.getSession', err);
+                // en cas d'erreur lors de la vérification, on affiche quand même l'app en mode demo
+                await initializeApp();
+            }
+        });
+    </script>
+</body>
+</html>.toggle('dark-theme');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
         });
 
