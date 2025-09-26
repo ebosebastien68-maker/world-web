@@ -37,7 +37,7 @@
 
     <div class="main-content-wrapper">
         <main id="app-content">
-            <div class="loader">Vérification des droits...</div>
+            <div class="loader">Chargement...</div>
         </main>
     </div>
 
@@ -52,28 +52,15 @@
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.body.classList.toggle('dark-theme', savedTheme === 'dark');
 
-            // --- NOUVELLE LOGIQUE DE SÉCURITÉ (TEST FINAL) ---
+            // --- LOGIQUE DE VÉRIFICATION D'AUTHENTIFICATION SIMPLIFIÉE ---
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) { 
                 window.location.href = 'auth.html'; 
                 return; 
             }
-
-            // Au lieu d'appeler la fonction, on lit directement la table
-            const { data: profile, error } = await supabaseClient
-                .from('profiles')
-                .select('role')
-                .eq('id', session.user.id)
-                .single();
-
-            if (error || !profile || profile.role !== 'admin') {
-                alert("Accès refusé. Vous devez être administrateur.");
-                await supabaseClient.auth.signOut();
-                window.location.href = 'auth.html';
-                return;
-            }
             
-            // Si la sécurité est validée, on lance l'app
+            // Si l'utilisateur est authentifié, on lance l'application.
+            // La vérification du rôle 'admin' a été retirée.
             currentUser = session.user;
             await initializeApp();
         });
