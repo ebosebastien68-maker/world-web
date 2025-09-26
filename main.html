@@ -3,306 +3,251 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>World Web - Fil d'Actualité</title>
+    <title>Dashboard - World Web</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* ========================================= */
-        /* --- Styles Modernes et Variables CSS --- */
-        /* ========================================= */
-        :root { 
-            --font-family: 'Inter', sans-serif; 
-            --transition-speed: 0.3s; 
-            --bg-main: #f0f2f5; 
-            --bg-header: #ffffff; 
-            --bg-card: #ffffff;
-            --text-primary: #050505; 
-            --text-secondary: #606770; 
-            --accent-color: #0866ff; 
-            --accent-hover: #065ee0;
-            --shadow-light: 0 1px 2px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.1); 
-            --shadow-header: 0 0 10px rgba(0, 0, 0, 0.1); /* Ombre plus douce pour le header */
-            --border-radius-main: 8px;
-            --border-color: #dddfe2;
+        /* --- DÉFINITION DU THÈME (VARIABLES CSS) --- */
+        :root {
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --transition-speed: 0.2s;
+            
+            /* Thème Clair (défaut) */
+            --bg-main: #f0f2f5;
+            --bg-sidebar: #ffffff;
+            --bg-content: #ffffff;
+            --text-primary: #1c1e21;
+            --text-secondary: #65676b;
+            --border-color: #e0e0e0;
+            --accent-color: #0d6efd;
+            --shadow-color: rgba(0, 0, 0, 0.05);
         }
 
-        body.dark-theme { 
-            --bg-main: #18191a; 
-            --bg-header: #242526; 
-            --bg-card: #242526;
-            --text-primary: #e4e6eb; 
-            --text-secondary: #b0b3b8; 
-            --accent-color: #4dabf7; 
-            --accent-hover: #63b3ed;
-            --shadow-light: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
-            --shadow-header: 0 0 15px rgba(0, 0, 0, 0.5);
+        /* Thème Sombre */
+        body.dark-theme {
+            --bg-main: #18191a;
+            --bg-sidebar: #242526;
+            --bg-content: #242526;
+            --text-primary: #e4e6eb;
+            --text-secondary: #b0b3b8;
             --border-color: #3a3b3c;
+            --accent-color: #4dabf7;
+            --shadow-color: rgba(0, 0, 0, 0.2);
         }
 
-        /* ============================== */
-        /* --- Mise en Page Globale --- */
-        /* ============================== */
+        /* --- STRUCTURE DE BASE --- */
         * { box-sizing: border-box; }
         body { 
-            font-family: var(--font-family); 
+            font-family: var(--font-family);
             margin: 0; 
             background-color: var(--bg-main); 
-            color: var(--text-primary); 
-            height: 100vh; 
-            overflow: hidden; 
-            display: flex; 
-            flex-direction: column; 
-            transition: background-color var(--transition-speed), color var(--transition-speed); 
+            color: var(--text-primary);
+            display: grid;
+            grid-template-columns: 240px 1fr; /* Sidebar | Contenu Principal */
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color var(--transition-speed), color var(--transition-speed);
         }
 
-        .main-content-wrapper { 
-            flex-grow: 1; 
-            overflow: hidden; 
-            display: flex; 
-            flex-direction: column; 
-        }
-
-        /* ================================= */
-        /* --- Header Flottant (NavBar) --- */
-        /* ================================= */
-        .floating-header { 
-            background-color: var(--bg-header); 
-            padding: 0 24px; /* Ajustement du padding */
-            height: 60px; /* Hauteur standard moderne */
-            flex-shrink: 0; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            box-shadow: var(--shadow-header); /* Ombre douce et large pour l'effet flottant */
-            z-index: 1000; 
-            border-bottom: 1px solid var(--border-color); /* Ligne subtile */
-            transition: var(--transition-speed);
-        }
-
-        .header-logo {
-            font-size: 1.8em;
-            font-weight: 700;
-            color: var(--accent-color);
-            line-height: 1;
-        }
-
-        /* Liens de Navigation Horizontale */
-        .nav-links { 
-            display: flex; 
-            gap: 1px; /* Espacement minimal pour les icônes */
-        }
-        .nav-links a { 
-            position: relative;
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            height: 60px;
-            padding: 0 20px;
-            text-decoration: none; 
-            color: var(--text-secondary); 
-            font-weight: 500; 
-            transition: color var(--transition-speed); 
-        }
-        .nav-links a:hover { 
-            background-color: transparent; 
-            color: var(--text-primary); 
-        }
-        .nav-links a.active { 
-            color: var(--accent-color); 
-        }
-        /* Indicateur de page active (ligne bleue) */
-        .nav-links a.active::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background-color: var(--accent-color);
-            border-top-left-radius: 2px;
-            border-top-right-radius: 2px;
-        }
-
-        /* Bouton Thème / User Menu */
-        .theme-toggle { 
-            background: var(--bg-main); /* Fond légèrement contrasté */
-            border: none; 
-            cursor: pointer; 
-            color: var(--text-primary); 
-            padding: 10px;
-            border-radius: 50%;
-            transition: background-color var(--transition-speed), transform 0.1s;
-        }
-        .theme-toggle:hover { 
-            background-color: var(--border-color); /* Effet de survol subtil */
-            transform: scale(1.05);
-        }
-        .theme-toggle svg {
-            width: 20px;
-            height: 20px;
-            display: block;
-        }
-
-        /* ==================================== */
-        /* --- Contenu Principal (Feed) --- */
-        /* ==================================== */
-        #app-content { 
-            flex-grow: 1; 
-            overflow-y: auto; 
-            padding: 20px 0; /* Padding vertical uniquement */
-            background-color: var(--bg-main); 
-            /* Centrer le fil dans un conteneur maximal */
+        /* --- BARRE LATÉRALE DE NAVIGATION (SIDEBAR) --- */
+        .sidebar {
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            padding: 20px 15px;
+            transition: background-color var(--transition-speed), border-color var(--transition-speed);
         }
-        
-        .feed-container {
-            width: 100%;
-            max-width: 700px; /* Largeur typique d'un fil d'actualité central */
-            padding: 0 15px;
+        .sidebar-header {
+            font-size: 1.5em;
+            font-weight: 700;
+            padding: 0 10px 20px 10px;
+            color: var(--accent-color);
+        }
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .nav-links a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 10px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: background-color var(--transition-speed), color var(--transition-speed);
+        }
+        .nav-links a:hover {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+        }
+        .nav-links a.active {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        .nav-links svg {
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
         }
 
-        .preloaded-page { 
-            display: none; 
-            animation: fadeIn 0.4s ease; 
+        /* --- CONTENU PRINCIPAL --- */
+        .main-content-wrapper {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: translateY(10px); } 
-            to { opacity: 1; transform: translateY(0); } 
+        .main-header {
+            padding: 15px 25px;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        
-        .content-card {
-            background-color: var(--bg-card);
-            border-radius: var(--border-radius-main);
-            box-shadow: var(--shadow-light);
-            padding: 20px;
-            margin-bottom: 20px;
+        #app-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 0 25px 25px 25px;
+        }
+        .preloaded-page {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .loader { 
-            text-align: center; 
-            padding: 50px; 
-            font-size: 1.1em; 
-            color: var(--text-secondary); 
+        /* --- BOUTON POUR CHANGER DE THÈME --- */
+        .theme-toggle {
+            background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 8px; border-radius: 50%;
         }
+        .theme-toggle:hover { background-color: var(--bg-main); color: var(--text-primary); }
+
+        .loader { text-align: center; padding: 50px; font-size: 1.5em; color: var(--text-secondary); }
     </style>
 </head>
 <body>
-    
-    <header class="floating-header" role="navigation" aria-label="Navigation principale">
-        <div class="header-logo">World Web</div> 
+
+    <aside class="sidebar">
+        <div class="sidebar-header">World Web</div>
         <nav class="nav-links">
-            <a href="#home" class="nav-link active" role="menuitem">Accueil</a>
-            <a href="#notifications" class="nav-link" role="menuitem">Notifications</a>
-            <a href="#profil" class="nav-link" role="menuitem">Profil</a>
+            <a href="#home" class="nav-link active" title="Accueil">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                <span>Accueil</span>
+            </a>
+            <a href="#publier" class="nav-link" title="Publier">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>Publier</span>
+            </a>
+            <a href="#menu" class="nav-link" title="Menu">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                <span>Menu</span>
+            </a>
         </nav>
-        <button id="theme-toggle" class="theme-toggle" aria-label="Basculer le thème" title="Basculer le thème sombre/clair">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM7.5 12a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.75 7.5c.078.261.27.49.52.639l1.724 1.053a.75.75 0 0 1 0 1.274l-1.724 1.054a1.708 1.708 0 0 0-.52.639.75.75 0 0 1-.958.077l-1.429-.974a1.733 1.733 0 0 0-1.28.026.75.75 0 1 1-.723-1.306 3.233 3.233 0 0 1 2.373-.069l1.429.974c.25-.15.442-.378.52-.639Z" class="sun-icon"/><path d="M7.5 18.75a.75.75 0 0 1 0-1.5h.008a.75.75 0 0 1 0 1.5H7.5ZM12 18.75a.75.75 0 0 1-.75.75v2.25a.75.75 0 0 1 1.5 0V19.5a.75.75 0 0 1-.75-.75ZM3.586 16.714a.75.75 0 0 1-.723-1.306 3.233 3.233 0 0 1 2.373-.069l1.429.974c.25.15.442.378.52.639a.75.75 0 0 1-.958.077l-1.429-.974a1.733 1.733 0 0 0-1.28.026Z" class="sun-icon"/></svg>
-        </button>
-    </header>
+    </aside>
 
     <div class="main-content-wrapper">
-        <main id="app-content" role="main">
-            <div class="feed-container">
-                <div class="loader">Chargement du fil d'actualité...</div>
-            </div>
+        <header class="main-header">
+            <h1 id="page-title" style="font-size: 1.8em; margin: 0;">Accueil</h1>
+            <button class="theme-toggle" id="themeToggle" title="Changer de thème">
+                <svg id="theme-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
+        </header>
+        <main id="app-content">
+            <div class="loader">Vérification des droits...</div>
         </main>
     </div>
 
     <script>
+        // --- LOGIQUE DE SÉCURITÉ ET D'INITIALISATION (INCHANGÉE) ---
         const SUPABASE_URL = 'https://rrcbprbxgonzsqldhfil.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyY2JwcmJ4Z29uenNxbGRoZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MzY1NjUsImV4cCI6MjA3NDExMjU2NX0.-C7VtLJA7ZLByprNBsMKSIKnH7HubPzgpIXyKEGYwrA';
-        const { createClient } = supabase;
-        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let currentUser = null;
         
         document.addEventListener('DOMContentLoaded', async () => {
+            // Appliquer le thème sauvegardé
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.body.classList.toggle('dark-theme', savedTheme === 'dark');
-            document.getElementById('theme-toggle').addEventListener('click', themeToggle);
 
-
-            // --- LOGIQUE DE SÉCURITÉ (AUTHENTIFICATION) ---
+            // Logique de sécurité
             const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) { 
-                window.location.href = 'auth.html'; 
-                return; 
+            if (!session) { window.location.href = 'auth.html'; return; }
+            const { data: profile, error } = await supabaseClient.from('profiles').select('role').eq('id', session.user.id).single();
+            if (error || !profile || profile.role !== 'admin') {
+                alert("Accès refusé. Vous devez être administrateur.");
+                await supabaseClient.auth.signOut();
+                window.location.href = 'auth.html';
+                return;
             }
             
-            // L'application est lancée pour tout utilisateur authentifié
+            // Si la sécurité est validée, on lance l'app
             currentUser = session.user;
             await initializeApp();
         });
 
-        // --- Le reste du script ---
-        const appContent = document.querySelector('.feed-container'); // Cibler le conteneur du fil
+        // --- LOGIQUE DE L'APPLICATION (PRÉCHARGEMENT, ROUTAGE) ---
+        const appContent = document.getElementById('app-content');
         const navLinks = document.querySelectorAll('.nav-link');
-        const pagesToPreload = ['home', 'notifications', 'profil']; // Mis à jour pour correspondre aux liens du header
+        const pageTitle = document.getElementById('page-title');
+        const pagesToPreload = ['home', 'publier', 'menu'];
 
-        async function initializeApp() {
-            console.log('Application initialisée pour l\'utilisateur : ' + currentUser.email);
-            await preloadAllPages(); 
-            showPage('home'); 
-        }
+        const showPage = (page) => {
+            document.querySelectorAll('.preloaded-page').forEach(p => p.style.display = 'none');
+            const activePage = document.getElementById(`page-${page}`);
+            if (activePage) activePage.style.display = 'block';
 
-        function showPage(pageName) {
-            const pages = document.querySelectorAll('.preloaded-page');
-            pages.forEach(page => {
-                page.style.display = page.id === `page-${pageName}` ? 'block' : 'none';
-            });
-            // Cibler le loader à l'intérieur du feed-container
-            const loader = document.querySelector('.feed-container .loader');
-            if (loader) loader.style.display = 'none'; 
-        }
-
-        function handleRouteChange(event) {
-            event.preventDefault();
-            const target = event.currentTarget.getAttribute('href').substring(1);
-            showPage(target);
             navLinks.forEach(link => {
-                link.classList.toggle('active', link.getAttribute('href').substring(1) === target);
-            });
-        }
-        
-        async function preloadAllPages() {
-            // Vider le contenu initial (y compris le loader)
-            appContent.innerHTML = '';
-            
-            pagesToPreload.forEach(page => {
-                const pageDiv = document.createElement('div');
-                pageDiv.id = `page-${page}`;
-                pageDiv.className = 'preloaded-page';
-                
-                // Contenu de la carte moderne
-                let contentHTML = `<div class="content-card">
-                    <p style="color: var(--accent-color); font-weight: 600;">Page ${page.charAt(0).toUpperCase() + page.slice(1)}</p>
-                    <p style="color: var(--text-secondary);">Ceci est le contenu de la page. Le conteneur principal assure que cette zone défile infiniment sous le header flottant.</p>
-                </div>`;
-
-                if (page === 'home') {
-                     // Ajout d'un grand bloc pour simuler le défilement infini
-                    contentHTML += `
-                    <div class="content-card" style="margin-top: 10px;">
-                        <h3>Fil d'Actualité</h3>
-                        <div style="height: 180vh; background-color: var(--bg-main); border: 1px dashed var(--border-color); border-radius: 4px; padding: 20px; color: var(--text-secondary); display: flex; align-items: center; justify-content: center;">
-                            Zone de contenu défilant (180vh)
-                        </div>
-                    </div>`;
+                link.classList.remove('active');
+                if (link.href.includes(page)) {
+                    link.classList.add('active');
+                    pageTitle.textContent = link.title; // Mettre à jour le titre de la page
                 }
-                
-                pageDiv.innerHTML = contentHTML;
-                appContent.appendChild(pageDiv);
             });
-            navLinks.forEach(link => link.addEventListener('click', handleRouteChange));
-        }
+        };
+        
+        const handleRouteChange = () => {
+            const page = window.location.hash.substring(1) || 'home';
+            showPage(page);
+        };
+        
+        const preloadAllPages = async () => {
+            appContent.innerHTML = '';
+            for (const pageName of pagesToPreload) {
+                const response = await fetch(`./pages/${pageName}.html`);
+                const html = await response.text();
+                const pageContainer = document.createElement('div');
+                pageContainer.id = `page-${pageName}`;
+                pageContainer.classList.add('preloaded-page');
+                pageContainer.innerHTML = html;
+                appContent.appendChild(pageContainer);
+            }
+        };
 
-        function themeToggle() {
+        const initializeApp = async () => {
+            await preloadAllPages();
+            document.querySelectorAll('.preloaded-page script').forEach(script => {
+                const newScript = document.createElement('script');
+                newScript.textContent = script.textContent;
+                document.body.appendChild(newScript).remove();
+            });
+            window.addEventListener('hashchange', handleRouteChange);
+            handleRouteChange();
+        };
+
+        // --- GESTION DU THÈME ---
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', () => {
             const isDark = document.body.classList.toggle('dark-theme');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        }
-        
+        });
+
     </script>
 </body>
 </html>
