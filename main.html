@@ -165,29 +165,34 @@
     </div>
 
     <script>
-        // --- LOGIQUE DE SÉCURITÉ ET D'INITIALISATION (INCHANGÉE) ---
         const SUPABASE_URL = 'https://rrcbprbxgonzsqldhfil.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyY2JwcmJ4Z29uenNxbGRoZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MzY1NjUsImV4cCI6MjA3NDExMjU2NX0.-C7VtLJA7ZLByprNBsMKSIKnH7HubPzgpIXyKEGYwrA';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // CORRECTION APPLIQUÉE ICI
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
         let currentUser = null;
         
         document.addEventListener('DOMContentLoaded', async () => {
-            // Appliquer le thème sauvegardé
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.body.classList.toggle('dark-theme', savedTheme === 'dark');
 
-            // Logique de sécurité
             const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) { window.location.href = 'auth.html'; return; }
-            const { data: profile, error } = await supabaseClient.from('profiles').select('role').eq('id', session.user.id).single();
-            if (error || !profile || profile.role !== 'admin') {
+            if (!session) { 
+                window.location.href = 'auth.html'; 
+                return; 
+            }
+
+            const { data: role, error } = await supabaseClient.rpc('get_user_role');
+
+            if (error || role !== 'admin') {
                 alert("Accès refusé. Vous devez être administrateur.");
                 await supabaseClient.auth.signOut();
                 window.location.href = 'auth.html';
                 return;
             }
             
-            // Si la sécurité est validée, on lance l'app
             currentUser = session.user;
             await initializeApp();
         });
@@ -202,12 +207,11 @@
             document.querySelectorAll('.preloaded-page').forEach(p => p.style.display = 'none');
             const activePage = document.getElementById(`page-${page}`);
             if (activePage) activePage.style.display = 'block';
-
             navLinks.forEach(link => {
                 link.classList.remove('active');
                 if (link.href.includes(page)) {
                     link.classList.add('active');
-                    pageTitle.textContent = link.title; // Mettre à jour le titre de la page
+                    pageTitle.textContent = link.title;
                 }
             });
         };
@@ -241,13 +245,11 @@
             handleRouteChange();
         };
 
-        // --- GESTION DU THÈME ---
         const themeToggle = document.getElementById('themeToggle');
         themeToggle.addEventListener('click', () => {
             const isDark = document.body.classList.toggle('dark-theme');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
         });
-
     </script>
 </body>
 </html>
